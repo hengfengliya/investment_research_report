@@ -1,0 +1,41 @@
+// datasource 指定数据库连接，这里使用 PostgreSQL，对应 Neon 提供的实例。
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL") // 从环境变量读取连接字符串，避免明文写死。
+}
+
+// generator 告诉 Prisma 需要生成 TypeScript 客户端。
+generator client {
+  provider = "prisma-client-js"
+  output   = "../backend/node_modules/.prisma/client" // 指定生成目录位于 backend/.prisma，避免覆盖依赖。
+}
+
+// Report 模型对应研报数据表，字段来自 PRD 定义。
+model Report {
+  id            Int       @id @default(autoincrement()) // 主键自增，满足简单需求。
+  title         String                                   // 研报标题。
+  category      String                                   // 研报分类（strategy / industry / macro / stock）。
+  org           String?                                  // 发布机构。
+  author        String?                                  // 作者，多个作者以逗号分隔。
+  date          DateTime                                 // 研报发布时间。
+  summary       String?                                  // 研报摘要。
+  pdfUrl        String?                                  // PDF 下载链接。
+  sourceUrl     String                                   // 原文链接，便于跳转。
+  stockCode     String?                                  // 股票代码。
+  stockName     String?                                  // 股票名称。
+  industry      String?                                  // 所属行业。
+  rating        String?                                  // 投资评级。
+  ratingChange  String?                                  // 评级变化。
+  targetPrice   Float?                                   // 目标价格。
+  changePercent Float?                                   // 涨跌预期百分比。
+  topicTags     String[]  @default([])                   // 主题标签，以数组形式保存。
+  impactLevel   String?                                  // 策略/宏观报告的影响程度。
+  dataSource    String?   @default("EastMoney")          // 数据来源标识，默认为东方财富。
+  createdAt     DateTime  @default(now())                // 入库时间，自动写入。
+
+  @@index([category])
+  @@index([date])
+  @@index([org])
+  @@index([author])
+  @@unique([title, date, org])
+}

@@ -1,0 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 自定义全局样式：让页面背景更柔和。 */
+body {
+  @apply bg-slate-50 text-slate-800;
+}
