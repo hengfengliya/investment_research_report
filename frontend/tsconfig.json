@@ -15,7 +15,7 @@
       "@components/*": ["components/*"],
       "@pages/*": ["pages/*"],
       "@lib/*": ["lib/*"],
-      "@types/*": ["types/*"]
+      "@shared-types/*": ["types/*"]
     }
   },
   "include": ["src"]

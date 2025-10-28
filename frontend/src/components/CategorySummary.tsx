@@ -1,4 +1,4 @@
-import type { CategoryStat } from "@types/report";
+import type { CategoryStat } from "@shared-types/report";
 
 interface CategorySummaryProps {
   stats: CategoryStat[];

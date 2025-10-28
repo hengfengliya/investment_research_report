@@ -1,4 +1,4 @@
-import type { ReportFilter, ReportCategory } from "@types/report";
+import type { ReportFilter, ReportCategory } from "@shared-types/report";
 
 interface FilterBarProps {
   filters: ReportFilter;

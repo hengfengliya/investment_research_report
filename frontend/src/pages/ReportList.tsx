@@ -11,7 +11,7 @@ import type {
   CategoryStat,
   ReportFilter,
   ReportListResponse,
-} from "@types/report";
+} from "@shared-types/report";
 
 const DEFAULT_FILTERS: ReportFilter = {
   page: 1,

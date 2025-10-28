@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import type { Report } from "@types/report";
+import type { Report } from "@shared-types/report";
 
 interface ReportCardProps {
   report: Report;

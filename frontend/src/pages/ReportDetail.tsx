@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { getReportDetail } from "@lib/api";
-import type { Report } from "@types/report";
+import type { Report } from "@shared-types/report";
 
 const formatDateTime = (value: string) => {
   const date = new Date(value);

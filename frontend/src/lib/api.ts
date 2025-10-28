@@ -4,7 +4,7 @@ import type {
   ReportCategory,
   ReportFilter,
   ReportListResponse,
-} from "@types/report";
+} from "@shared-types/report";
 
 const API_BASE =
   (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(
