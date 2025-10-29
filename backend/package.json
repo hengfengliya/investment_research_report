@@ -6,7 +6,7 @@
     "dev": "bun --watch server.ts",
     "start": "bun run server.ts",
     "lint": "bunx biome check .",
-    "prisma:generate": "bunx prisma generate"
+    "prisma:generate": "npx prisma generate --schema ../prisma/schema.prisma"
   },
   "dependencies": {
     "@hono/node-server": "^1.11.2",

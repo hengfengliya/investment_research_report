@@ -1,12 +1,13 @@
 {
   "extends": "../tsconfig.json",
   "compilerOptions": {
-    "baseUrl": ".",
-    "paths": {
-      "@lib/*": ["lib/*"],
-      "@services/*": ["services/*"],
-      "@types/*": ["types/*"]
-    }
+    "baseUrl": "."
   },
-  "include": ["lib", "services", "types", "scripts/**/*.ts", "server.ts"]
+  "include": [
+    "lib",
+    "services",
+    "types",
+    "scripts/**/*.ts",
+    "server.ts"
+  ]
 }
