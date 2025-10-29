@@ -10,7 +10,7 @@ const app = new Hono();
  */
 app.get(async (c) => {
   const rawId = c.req.param("id"); // 从路径中读取研报的 id。
-  const id = Number.parseInt(rawId, 10); // 将字符串转换为数字。
+  const id = Number.parseInt(rawId ?? "", 10); // 将字符串转换为数字。
 
   if (Number.isNaN(id)) {
     // 如果路径不是数字，这里直接返回 400 表示请求无效。
