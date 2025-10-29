@@ -8,10 +8,12 @@
   },
   "scripts": {
     "build": "npm run build --workspace frontend",
-    "prisma:generate": "npm run prisma:generate --workspace backend"
+    "prisma:generate": "npm run prisma:generate --workspace backend",
+    "vercel-build": "prisma generate --schema prisma/schema.prisma && npm run build --workspace frontend"
   },
   "dependencies": {
     "@prisma/client": "^5.20.0",
+    "prisma": "^5.20.0",
     "hono": "^4.5.3",
     "axios": "^1.7.7",
     "cheerio": "^1.0.0-rc.12",
@@ -20,7 +22,6 @@
   },
   "devDependencies": {
     "@types/node": "^24.9.2",
-    "prisma": "^5.20.0",
     "typescript": "^5.5.4"
   }
 }
