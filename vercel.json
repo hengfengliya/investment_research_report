@@ -1,8 +1,8 @@
 {
   "framework": "vite",
-  "buildCommand": "cd backend && npm install && cd ../frontend && rm -rf node_modules package-lock.json && npm install && npm run build && cd .. && npm run prisma:generate",
+  "buildCommand": "npm install && npm run build && npm run prisma:generate",
   "outputDirectory": "frontend/dist",
-  "installCommand": "echo 'Skipping root install'",
+  "installCommand": "npm install",
   "env": {
     "NODE_VERSION": "20"
   }

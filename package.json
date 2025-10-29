@@ -1,6 +1,7 @@
 {
   "name": "investment-research-report",
   "private": true,
+  "type": "module",
   "workspaces": ["frontend", "backend"],
   "engines": {
     "node": ">=20.0.0 <21.0.0"
@@ -9,7 +10,17 @@
     "build": "npm run build --workspace frontend",
     "prisma:generate": "npm run prisma:generate --workspace backend"
   },
+  "dependencies": {
+    "@prisma/client": "^5.20.0",
+    "hono": "^4.5.3",
+    "axios": "^1.7.7",
+    "cheerio": "^1.0.0-rc.12",
+    "p-limit": "^5.0.0",
+    "zod": "^3.23.8"
+  },
   "devDependencies": {
+    "@types/node": "^24.9.2",
+    "prisma": "^5.20.0",
     "typescript": "^5.5.4"
   }
 }
