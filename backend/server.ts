@@ -1,17 +1,17 @@
-﻿import { serve } from "@hono/node-server";
+import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import {
   getCategoryStats,
   getReportById,
   listReports,
-} from "./services/report-service";
-import { listQuerySchema, syncKeySchema } from "./lib/validators";
-import { runSyncOnce } from "./scripts/sync-runner";
+} from "./services/report-service.js";
+import { listQuerySchema, syncKeySchema } from "./lib/validators.js";
+import { runSyncOnce } from "./scripts/sync-runner.js";
 
 const app = new Hono();
 
 /**
- * 列表接口：解析查询参数后交由服务层处理，再统一包装响应。
+ * �б��ӿڣ�������ѯ�������ɷ���㴦������ͳһ��װ��Ӧ��
  */
 app.get("/api/reports", async (c) => {
   try {
@@ -23,7 +23,7 @@ app.get("/api/reports", async (c) => {
       {
         success: false,
         message:
-          error instanceof Error ? error.message : "列表查询失败，请稍后再试",
+          error instanceof Error ? error.message : "�б���ѯʧ�ܣ����Ժ�����",
       },
       400,
     );
@@ -31,25 +31,25 @@ app.get("/api/reports", async (c) => {
 });
 
 /**
- * 详情接口：校验路径参数并返回单条研报信息。
+ * ����ӿڣ�У��·�����������ص����б���Ϣ��
  */
 app.get("/api/report/:id", async (c) => {
   const rawId = c.req.param("id");
   const id = Number.parseInt(rawId, 10);
   if (Number.isNaN(id)) {
-    return c.json({ success: false, message: "研报编号不正确" }, 400);
+    return c.json({ success: false, message: "�б���Ų���ȷ" }, 400);
   }
 
   const report = await getReportById(id);
   if (!report) {
-    return c.json({ success: false, message: "未找到对应研报" }, 404);
+    return c.json({ success: false, message: "δ�ҵ���Ӧ�б�" }, 404);
   }
 
   return c.json({ success: true, data: report });
 });
 
 /**
- * 分类统计接口：用于前端绘制分类概览。
+ * ����ͳ�ƽӿڣ�����ǰ�˻��Ʒ��������
  */
 app.get("/api/categories", async (c) => {
   const stats = await getCategoryStats();
@@ -57,7 +57,7 @@ app.get("/api/categories", async (c) => {
 });
 
 /**
- * 同步接口：校验密钥后触发一次抓取任务。
+ * ͬ���ӿڣ�У����Կ�󴥷�һ��ץȡ����
  */
 app.post("/api/sync", async (c) => {
   try {
@@ -65,14 +65,14 @@ app.post("/api/sync", async (c) => {
     const secret = process.env.SYNC_SECRET;
 
     if (!secret || payload.key !== secret) {
-      return c.json({ success: false, message: "同步密钥错误" }, 401);
+      return c.json({ success: false, message: "ͬ����Կ����" }, 401);
     }
 
     const summary = await runSyncOnce();
     return c.json({ success: true, data: summary });
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : "同步任务执行失败";
+      error instanceof Error ? error.message : "ͬ������ִ��ʧ��";
     return c.json({ success: false, message }, 400);
   }
 });
@@ -85,6 +85,7 @@ serve(
     port,
   },
   () => {
-    console.log(`本地服务已启动：http://localhost:${port}`);
+    console.log(`���ط�����������http://localhost:${port}`);
   },
 );
+

@@ -1,7 +1,7 @@
-﻿import { prisma } from "../lib/prisma";
+import { prisma } from "../lib/prisma.js";
 
 /**
- * 调试脚本：输出当前数据库中研报的数量，便于验证同步结果是否生效。
+ * 调试脚本：统计当前数据库中的研报数量，确认同步逻辑是否生效。
  */
 async function main() {
   const count = await prisma.report.count();

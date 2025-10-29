@@ -1,7 +1,7 @@
 ﻿import axios from "axios";
 import * as cheerio from "cheerio";
-import type { ReportCategory } from "./category-config";
-import { CATEGORY_CONFIGS } from "./category-config";
+import type { ReportCategory } from "./category-config.js";
+import { CATEGORY_CONFIGS } from "./category-config.js";
 
 interface DetailResult {
   summary: string;

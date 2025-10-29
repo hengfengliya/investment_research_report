@@ -1,6 +1,6 @@
 ﻿import axios from "axios";
-import type { ReportCategory } from "./category-config";
-import { CATEGORY_CONFIGS } from "./category-config";
+import type { ReportCategory } from "./category-config.js";
+import { CATEGORY_CONFIGS } from "./category-config.js";
 
 const API_BASE = "https://reportapi.eastmoney.com/";
 const DEFAULT_PAGE_SIZE = Number(process.env.SYNC_PAGE_SIZE ?? "40");

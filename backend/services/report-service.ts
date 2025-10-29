@@ -1,44 +1,44 @@
-ï»¿import type { Prisma } from "@prisma/client";
-import { prisma } from "../lib/prisma";
-import type { ReportFilter } from "../types/report";
+import type { Prisma } from "@prisma/client";
+import { prisma } from "../lib/prisma.js";
+import type { ReportFilter } from "../types/report.js";
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_PAGE_SIZE = 20;
 const MAX_PAGE_SIZE = 100;
 
 /**
- * å°†ç­›é€‰æ¡ä»¶è½¬æ¢æˆ Prisma çš„æŸ¥è¯¢ç»“æž„ï¼Œç¡®ä¿ç­›é€‰é€»è¾‘é›†ä¸­ç®¡ç†ã€‚
+ * ½«É¸Ñ¡Ìõ¼þ×ª»»³É Prisma µÄ²éÑ¯½á¹¹£¬È·±£É¸Ñ¡Âß¼­¼¯ÖÐ¹ÜÀí¡£
  */
 const buildWhere = (filter: ReportFilter): Prisma.ReportWhereInput => {
   const where: Prisma.ReportWhereInput = {};
 
   if (filter.category) {
-    // æ ¹æ®ç ”æŠ¥åˆ†ç±»ç­›é€‰ï¼Œä¾‹å¦‚ strategyã€macroã€industryã€stockã€‚
+    // ¸ù¾ÝÑÐ±¨·ÖÀàÉ¸Ñ¡£¬ÀýÈç strategy¡¢macro¡¢industry¡¢stock¡£
     where.category = filter.category;
   }
 
   if (filter.org) {
-    // æœºæž„åç§°æ¨¡ç³ŠåŒ¹é…ï¼Œå¿½ç•¥å¤§å°å†™ï¼Œæ–¹ä¾¿æœç´¢éƒ¨åˆ†åç§°ã€‚
+    // »ú¹¹Ãû³ÆÄ£ºýÆ¥Åä£¬ºöÂÔ´óÐ¡Ð´£¬·½±ãËÑË÷²¿·ÖÃû³Æ¡£
     where.org = { contains: filter.org, mode: "insensitive" };
   }
 
   if (filter.author) {
-    // ä½œè€…åŒæ ·é‡‡ç”¨æ¨¡ç³ŠåŒ¹é…ï¼Œå…¼å®¹å¤šä½œè€…æˆ–ä¸åŒå†™æ³•ã€‚
+    // ×÷ÕßÍ¬Ñù²ÉÓÃÄ£ºýÆ¥Åä£¬¼æÈÝ¶à×÷Õß»ò²»Í¬Ð´·¨¡£
     where.author = { contains: filter.author, mode: "insensitive" };
   }
 
   if (filter.industry) {
-    // è¡Œä¸šå­—æ®µä¸»è¦å‡ºçŽ°åœ¨è¡Œä¸šæˆ–ä¸ªè‚¡æŠ¥å‘Šä¸­ï¼ŒåŒæ ·æ¨¡ç³ŠåŒ¹é…ã€‚
+    // ÐÐÒµ×Ö¶ÎÖ÷Òª³öÏÖÔÚÐÐÒµ»ò¸ö¹É±¨¸æÖÐ£¬Í¬ÑùÄ£ºýÆ¥Åä¡£
     where.industry = { contains: filter.industry, mode: "insensitive" };
   }
 
   if (filter.rating) {
-    // æŠ•èµ„è¯„çº§å­—æ®µï¼ˆå¦‚ â€œä¹°å…¥â€â€œå¢žæŒâ€ï¼‰ä½¿ç”¨æ¨¡ç³ŠåŒ¹é…æ»¡è¶³ä¸åŒè¡¨è¿°ã€‚
+    // Í¶×ÊÆÀ¼¶×Ö¶Î£¨Èç ¡°ÂòÈë¡±¡°Ôö³Ö¡±£©Ê¹ÓÃÄ£ºýÆ¥ÅäÂú×ã²»Í¬±íÊö¡£
     where.rating = { contains: filter.rating, mode: "insensitive" };
   }
 
   if (filter.keyword) {
-    // å…³é”®è¯åŒæ—¶åŒ¹é…æ ‡é¢˜ã€æ‘˜è¦å’Œä¸»é¢˜æ ‡ç­¾ï¼Œæ–¹ä¾¿å¿«é€Ÿå®šä½å†…å®¹ã€‚
+    // ¹Ø¼ü´ÊÍ¬Ê±Æ¥Åä±êÌâ¡¢ÕªÒªºÍÖ÷Ìâ±êÇ©£¬·½±ã¿ìËÙ¶¨Î»ÄÚÈÝ¡£
     where.OR = [
       { title: { contains: filter.keyword, mode: "insensitive" } },
       { summary: { contains: filter.keyword, mode: "insensitive" } },
@@ -47,7 +47,7 @@ const buildWhere = (filter: ReportFilter): Prisma.ReportWhereInput => {
   }
 
   if (filter.startDate || filter.endDate) {
-    // æž„é€ å‘å¸ƒæ—¶é—´çš„é—­åŒºé—´ç­›é€‰ï¼Œç¡®ä¿æ—¥æœŸè¿‡æ»¤å‡†ç¡®ã€‚
+    // ¹¹Ôì·¢²¼Ê±¼äµÄ±ÕÇø¼äÉ¸Ñ¡£¬È·±£ÈÕÆÚ¹ýÂË×¼È·¡£
     where.date = {};
     if (filter.startDate) {
       where.date.gte = new Date(filter.startDate);
@@ -61,21 +61,21 @@ const buildWhere = (filter: ReportFilter): Prisma.ReportWhereInput => {
 };
 
 /**
- * æ ¹æ®æŽ’åºç±»åž‹ç”ŸæˆæŽ’åºè§„åˆ™ã€‚
+ * ¸ù¾ÝÅÅÐòÀàÐÍÉú³ÉÅÅÐò¹æÔò¡£
  */
 const buildOrderBy = (
   sort: ReportFilter["sort"],
 ): Prisma.ReportOrderByWithRelationInput => {
   if (sort === "hot") {
-    // â€œçƒ­åº¦â€æš‚æœªå®žçŽ°ï¼Œå…ˆç”¨åˆ›å»ºæ—¶é—´é™åºä½œä¸ºæ›¿ä»£è§„åˆ™ã€‚
+    // ¡°ÈÈ¶È¡±ÔÝÎ´ÊµÏÖ£¬ÏÈÓÃ´´½¨Ê±¼ä½µÐò×÷ÎªÌæ´ú¹æÔò¡£
     return { createdAt: "desc" };
   }
-  // é»˜è®¤æŒ‰ç…§ç ”æŠ¥å‘å¸ƒæ—¶é—´é™åºï¼Œä¿è¯æœ€æ–°å†…å®¹ä¼˜å…ˆå±•ç¤ºã€‚
+  // Ä¬ÈÏ°´ÕÕÑÐ±¨·¢²¼Ê±¼ä½µÐò£¬±£Ö¤×îÐÂÄÚÈÝÓÅÏÈÕ¹Ê¾¡£
   return { date: "desc" };
 };
 
 /**
- * æŸ¥è¯¢ç ”æŠ¥åˆ—è¡¨å¹¶è¿”å›žåˆ†é¡µä¿¡æ¯ã€‚
+ * ²éÑ¯ÑÐ±¨ÁÐ±í²¢·µ»Ø·ÖÒ³ÐÅÏ¢¡£
  */
 export const listReports = async (filter: ReportFilter) => {
   const safePage = Math.max(DEFAULT_PAGE, filter.page ?? DEFAULT_PAGE);
@@ -85,7 +85,7 @@ export const listReports = async (filter: ReportFilter) => {
   const where = buildWhere(filter);
   const orderBy = buildOrderBy(filter.sort);
 
-  // å¹¶è¡Œç»Ÿè®¡æ€»æ•°ä¸Žåˆ—è¡¨ï¼Œæé«˜å“åº”é€Ÿåº¦ã€‚
+  // ²¢ÐÐÍ³¼Æ×ÜÊýÓëÁÐ±í£¬Ìá¸ßÏìÓ¦ËÙ¶È¡£
   const [total, items] = await Promise.all([
     prisma.report.count({ where }),
     prisma.report.findMany({
@@ -106,14 +106,14 @@ export const listReports = async (filter: ReportFilter) => {
 };
 
 /**
- * æ ¹æ®ä¸»é”®æŸ¥è¯¢å•æ¡ç ”æŠ¥è¯¦æƒ…ã€‚
+ * ¸ù¾ÝÖ÷¼ü²éÑ¯µ¥ÌõÑÐ±¨ÏêÇé¡£
  */
 export const getReportById = async (id: number) => {
   return prisma.report.findUnique({ where: { id } });
 };
 
 /**
- * ç»Ÿè®¡å„ç ”æŠ¥åˆ†ç±»ä¸‹çš„æ•°é‡ï¼Œä¾›å‰ç«¯å±•ç¤ºä½¿ç”¨ã€‚
+ * Í³¼Æ¸÷ÑÐ±¨·ÖÀàÏÂµÄÊýÁ¿£¬¹©Ç°¶ËÕ¹Ê¾Ê¹ÓÃ¡£
  */
 export const getCategoryStats = async () => {
   const categories = await prisma.report.groupBy({
@@ -126,3 +126,4 @@ export const getCategoryStats = async () => {
     count: item._count.category,
   }));
 };
+

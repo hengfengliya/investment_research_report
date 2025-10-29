@@ -1,14 +1,14 @@
-ï»¿import pLimit from "p-limit";
-import { prisma } from "../lib/prisma";
-import type { ReportCategory } from "./category-config";
-import { fetchCategoryList } from "./fetch-list";
-import { fetchDetailInfo, resolveDetailUrl } from "./detail-parser";
+import pLimit from "p-limit";
+import { prisma } from "../lib/prisma.js";
+import type { ReportCategory } from "./category-config.js";
+import { fetchCategoryList } from "./fetch-list.js";
+import { fetchDetailInfo, resolveDetailUrl } from "./detail-parser.js";
 /**
- * æ§åˆ¶åŒæ—¶å¤„ç†çš„è¯¦æƒ…æŠ“å–æ•°é‡ï¼Œé¿å…å‹å®æ¥å£æˆ–æœ¬æœºå¸¦å®½ã€‚
+ * ¿ØÖÆÍ¬Ê±´¦ÀíµÄÏêÇé×¥È¡ÊıÁ¿£¬±ÜÃâÑ¹¿å½Ó¿Ú»ò±¾»ú´ø¿í¡£
  */
 const CONCURRENCY = Number(process.env.SYNC_CONCURRENCY ?? "4");
 /**
- * å›ºå®šåŒæ­¥é¡ºåºï¼Œä¼˜å…ˆæŠ“ç­–ç•¥ã€å®è§‚ï¼Œå†å¤„ç†è¡Œä¸šå’Œä¸ªè‚¡ï¼Œæ–¹ä¾¿è§‚å¯Ÿæ—¥å¿—ã€‚
+ * ¹Ì¶¨Í¬²½Ë³Ğò£¬ÓÅÏÈ×¥²ßÂÔ¡¢ºê¹Û£¬ÔÙ´¦ÀíĞĞÒµºÍ¸ö¹É£¬·½±ã¹Û²ìÈÕÖ¾¡£
  */
 const CATEGORY_SEQUENCE: ReportCategory[] = [
   "strategy",
@@ -40,7 +40,7 @@ const toNumber = (value: unknown) => {
 };
 const normalizeAuthors = (value: unknown) => {
   if (!value) return [] as string[];
-  const source = Array.isArray(value) ? value : String(value).split(/[,ï¼Œ\s]+/);
+  const source = Array.isArray(value) ? value : String(value).split(/[,£¬\s]+/);
   return source
     .map((item) => {
       const text = String(item);
@@ -55,8 +55,8 @@ const ensureOrgName = (record: Record<string, unknown>) => {
   const org =
     (record.orgSName as string | undefined) ??
     (record.orgName as string | undefined) ??
-    "æœªçŸ¥æœºæ„";
-  return org.trim() || "æœªçŸ¥æœºæ„";
+    "Î´Öª»ú¹¹";
+  return org.trim() || "Î´Öª»ú¹¹";
 };
 const ensureDate = (value: unknown) => {
   const raw = value as string | undefined;
@@ -131,7 +131,7 @@ const syncCategory = async (category: ReportCategory): Promise<CategorySummary> 
         } catch (error) {
           summary.errors += 1;
           const message = error instanceof Error ? error.message : String(error);
-          console.error(`åŒæ­¥ ${category} ç ”æŠ¥å¤±è´¥ï¼š${message}`);
+          console.error(`Í¬²½ ${category} ÑĞ±¨Ê§°Ü£º${message}`);
         }
       }),
     ),
@@ -163,10 +163,12 @@ const isDirectRun =
 if (isDirectRun) {
   runSyncOnce()
     .then((summary) => {
-      console.log("åŒæ­¥å®Œæˆ", JSON.stringify(summary, null, 2));
+      console.log("Í¬²½Íê³É", JSON.stringify(summary, null, 2));
     })
     .catch((error) => {
-      console.error("åŒæ­¥ä»»åŠ¡å¤±è´¥", error);
+      console.error("Í¬²½ÈÎÎñÊ§°Ü", error);
       process.exit(1);
     });
 }
+
+
