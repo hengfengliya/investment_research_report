@@ -1,5 +1,9 @@
 {
   "framework": "vite",
   "buildCommand": "npm install && npm run build && npm run prisma:generate",
-  "outputDirectory": "frontend/dist"
+  "outputDirectory": "frontend/dist",
+  "installCommand": "npm install",
+  "env": {
+    "NODE_VERSION": "20"
+  }
 }

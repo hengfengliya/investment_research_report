@@ -17,3 +17,4 @@ tmp-*.*
 Thumbs.db
 .idea/
 .vscode/
+.history/

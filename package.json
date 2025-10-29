@@ -2,6 +2,9 @@
   "name": "investment-research-report",
   "private": true,
   "workspaces": ["frontend", "backend"],
+  "engines": {
+    "node": ">=20.0.0 <21.0.0"
+  },
   "scripts": {
     "build": "npm run build --workspace frontend",
     "prisma:generate": "npm run prisma:generate --workspace backend"
