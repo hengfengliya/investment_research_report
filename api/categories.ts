@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { handle } from "hono/vercel";
-import { getCategoryStats } from "../backend/services/report-service";
+import { getCategoryStats } from "../backend/dist/services/report-service.js";
 
 const app = new Hono();
 

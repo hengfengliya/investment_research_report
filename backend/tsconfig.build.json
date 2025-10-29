@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "noEmit": false,
+    "declaration": true,
+    "sourceMap": false
+  },
+  "include": [
+    "lib",
+    "services",
+    "types",
+    "scripts/**/*.ts"
+  ]
+}

@@ -9,7 +9,7 @@
   "scripts": {
     "build": "npm run build --workspace frontend",
     "prisma:generate": "npm run prisma:generate --workspace backend",
-    "vercel-build": "prisma generate --schema prisma/schema.prisma && npm run build --workspace frontend"
+    "vercel-build": "npx prisma generate --schema prisma/schema.prisma && npm run build --workspace backend && npm run build --workspace frontend"
   },
   "dependencies": {
     "@prisma/client": "^5.20.0",

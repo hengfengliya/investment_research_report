@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { handle } from "hono/vercel";
-import { listReports } from "../backend/services/report-service";
-import { listQuerySchema } from "../backend/lib/validators";
+import { listReports } from "../backend/dist/services/report-service.js";
+import { listQuerySchema } from "../backend/dist/lib/validators.js";
 
 const app = new Hono();
 

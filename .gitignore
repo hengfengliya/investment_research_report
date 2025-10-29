@@ -5,6 +5,7 @@ node_modules/
 
 # 构建产物
 frontend/dist/
+backend/dist/
 
 # 环境与临时文件
 .env
