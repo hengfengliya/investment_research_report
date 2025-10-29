@@ -5,9 +5,9 @@ datasource db {
 }
 
 // generator 告诉 Prisma 需要生成 TypeScript 客户端。
+// 使用默认路径，确保在 Vercel Serverless 环境中能正确找到
 generator client {
   provider = "prisma-client-js"
-  output   = "../backend/node_modules/.prisma/client" // 指定生成目录位于 backend/.prisma，避免覆盖依赖。
 }
 
 // Report 模型对应研报数据表，字段来自 PRD 定义。
