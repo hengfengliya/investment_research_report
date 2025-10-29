@@ -7,21 +7,22 @@ const app = new Hono();
 
 /**
  * GET /api/reports
- * ä½œç”¨ï¼šæ ¹æ®ç­›é€‰æ¡ä»¶è¿”å›ç ”æŠ¥åˆ—è¡¨ã€‚
+ * ×÷ÓÃ£º¸ù¾İÉ¸Ñ¡Ìõ¼ş·µ»ØÑĞ±¨ÁĞ±í¡£
  */
 app.get(async (c) => {
+  console.log("[API] /reports Èë²Î", c.req.query());
   try {
-    // å°†æŸ¥è¯¢å‚æ•°å–å‡ºå¹¶ç”¨ zod åšæ ¡éªŒï¼Œé¿å…éæ³•è¾“å…¥ã€‚
     const query = listQuerySchema.parse(c.req.query());
     const data = await listReports(query);
+    console.log("[API] /reports ³É¹¦·µ»Ø", data.items.length, "Ìõ");
     return c.json({ success: true, data });
   } catch (error) {
-    // å¦‚æœæ ¡éªŒå¤±è´¥æˆ–æŸ¥è¯¢æŠ¥é”™ï¼Œè¿™é‡Œè¿”å›å‹å¥½çš„æç¤ºã€‚
+    console.error("[API] /reports µ÷ÓÃÊ§°Ü", error);
     return c.json(
       {
         success: false,
         message:
-          error instanceof Error ? error.message : "åˆ—è¡¨æŸ¥è¯¢å¤±è´¥ï¼Œè¯·ç¨åå†è¯•",
+          error instanceof Error ? error.message : "ÁĞ±í²éÑ¯Ê§°Ü£¬ÇëÉÔºóÔÙÊÔ",
       },
       400,
     );
@@ -29,6 +30,6 @@ app.get(async (c) => {
 });
 
 /**
- * Vercel è¦æ±‚å¯¼å‡ºä¸€ä¸ª handle å‡½æ•°ç”¨æ¥å¤„ç†è¯·æ±‚ã€‚
+ * Vercel ÒªÇóµ¼³öÒ»¸ö handle º¯ÊıÓÃÀ´´¦ÀíÇëÇó¡£
  */
 export default handle(app);

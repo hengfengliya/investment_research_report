@@ -6,18 +6,21 @@ const app = new Hono();
 
 /**
  * GET /api/categories
- * ä½œç”¨ï¼šè¿”å›å„ä¸ªåˆ†ç±»çš„ç ”æŠ¥æ•°é‡ã€‚
+ * ×÷ÓÃ£º·µ»Ø¸÷¸ö·ÖÀàµÄÑĞ±¨ÊıÁ¿¡£
  */
 app.get(async (c) => {
+  console.log("[API] /categories ÇëÇó½øÈë");
   try {
     const stats = await getCategoryStats();
+    console.log("[API] /categories ³É¹¦·µ»Ø", stats.length, "¸ö·ÖÀà");
     return c.json({ success: true, data: stats });
   } catch (error) {
-    console.error("åˆ†ç±»ç»Ÿè®¡æŸ¥è¯¢å¤±è´¥:", error);
+    console.error("·ÖÀàÍ³¼Æ²éÑ¯Ê§°Ü", error);
     return c.json(
       {
         success: false,
-        message: error instanceof Error ? error.message : "åˆ†ç±»ç»Ÿè®¡æŸ¥è¯¢å¤±è´¥ï¼Œè¯·ç¨åå†è¯•",
+        message:
+          error instanceof Error ? error.message : "·ÖÀàÍ³¼Æ²éÑ¯Ê§°Ü£¬ÇëÉÔºóÔÙÊÔ",
       },
       500,
     );
