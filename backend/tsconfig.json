@@ -1,11 +1,6 @@
 {
+  "extends": "../tsconfig.json",
   "compilerOptions": {
-    "target": "ES2022",
-    "module": "ESNext",
-    "moduleResolution": "Node",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
     "baseUrl": ".",
     "paths": {
       "@lib/*": ["lib/*"],
@@ -13,5 +8,5 @@
       "@types/*": ["types/*"]
     }
   },
-  "include": ["api", "lib", "services", "types"]
+  "include": ["lib", "services", "types", "scripts/**/*.ts", "server.ts"]
 }

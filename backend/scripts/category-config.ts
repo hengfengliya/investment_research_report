@@ -1,11 +1,7 @@
 export type ReportCategory = "stock" | "industry" | "strategy" | "macro";
 
 /**
- * 每个分类需要知道：
- * - endpoint：请求的接口路径（report/list 或 report/jg）。
- * - qType：东方财富接口中的分类编号。
- * - referer：防止被拒绝访问的来源页头。
- * - detailMode：稍后用于拼接详情页链接的策略。
+ * �������ã�����ͳһ�������������ҳƴ�ӷ�ʽ��
  */
 export interface CategoryConfig {
   endpoint: "report/list" | "report/jg";

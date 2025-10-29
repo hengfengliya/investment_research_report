@@ -7,13 +7,13 @@ import {
   resolveDetailUrl,
 } from "./detail-parser";
 
-const CONCURRENCY = Number(process.env.SYNC_CONCURRENCY ?? "4"); // 并发抓取详情的数量。
+const CONCURRENCY = Number(process.env.SYNC_CONCURRENCY ?? "4"); // 并发抓取详情页的数量，可用环境变量覆盖。
 const CATEGORY_SEQUENCE: ReportCategory[] = [
   "strategy",
   "macro",
   "industry",
   "stock",
-]; // 先同步宏观、策略，再到行业与个股。
+]; // 依次同步策略、宏观、行业、个股四类研报。
 
 interface CategorySummary {
   category: ReportCategory;
@@ -43,12 +43,15 @@ const toNumber = (value: unknown) => {
 
 const normalizeAuthors = (value: unknown) => {
   if (!value) return [];
-  const source = Array.isArray(value) ? value : String(value).split(/[,，、\s]+/);
+  const source = Array.isArray(value)
+    ? value
+    : String(value).split(/[,，、\s]+/);
+
   return source
     .map((item) => {
       const text = String(item);
       const parts = text.split(".");
-      return parts.length > 1 ? parts.at(-1) ?? "" : text;
+      return parts.length > 1 ? parts[parts.length - 1] ?? "" : text;
     })
     .map((name) => name.trim())
     .filter(Boolean);
@@ -73,9 +76,6 @@ const ensureDate = (value: unknown) => {
   return Number.isNaN(date.getTime()) ? new Date() : date;
 };
 
-/**
- * 同步单个分类，返回统计信息。
- */
 const syncCategory = async (
   category: ReportCategory,
 ): Promise<CategorySummary> => {
@@ -170,10 +170,9 @@ const syncCategory = async (
           }
         } catch (error) {
           summary.errors += 1;
-          console.error(
-            `同步 ${category} 研报失败：`,
-            (error as Error).message ?? error,
-          );
+          const message =
+            error instanceof Error ? error.message : String(error);
+          console.error(`同步 ${category} 研报失败：${message}`);
         }
       }),
     ),
@@ -201,7 +200,11 @@ export const runSyncOnce = async (): Promise<SyncSummary> => {
   };
 };
 
-if (import.meta.main) {
+const isDirectRun =
+  process.argv[1]?.includes("sync-runner.ts") ||
+  process.argv[1]?.includes("sync-runner.js");
+
+if (isDirectRun) {
   runSyncOnce()
     .then((summary) => {
       console.log("同步完成：", JSON.stringify(summary, null, 2));

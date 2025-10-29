@@ -3,11 +3,11 @@ import type { ReportCategory } from "./category-config";
 import { CATEGORY_CONFIGS } from "./category-config";
 
 const API_BASE = "https://reportapi.eastmoney.com/";
-const DEFAULT_PAGE_SIZE = Number(process.env.SYNC_PAGE_SIZE ?? "40"); // 每次抓取的条数，可用环境变量覆盖。
+const DEFAULT_PAGE_SIZE = Number(process.env.SYNC_PAGE_SIZE ?? "40"); // 每次抓取条数，默认 40。
 const LOOKBACK_DAYS = Number(process.env.SYNC_LOOKBACK_DAYS ?? "30"); // 回溯天数，默认近 30 天。
 
 /**
- * 将当前日期往前或往后偏移 offset 天，并格式化成 yyyy-mm-dd。
+ * 将当前日期按 offset 偏移，并格式化为 yyyy-mm-dd。
  */
 const formatDate = (offset: number) => {
   const date = new Date();
@@ -16,12 +16,12 @@ const formatDate = (offset: number) => {
 };
 
 /**
- * 东方财富接口使用 JSONP，需要先去掉函数名再解析。
+ * 东方财富接口使用 JSONP，需要先剥离回调函数再解析。
  */
 const parseJsonp = <T>(raw: string): T => {
   const trimmed = raw.trim();
 
-  // 接口偶尔直接返回 JSON，这里直接解析。
+  // 部分接口偶尔直接返回 JSON。
   if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
     return JSON.parse(trimmed) as T;
   }
@@ -41,10 +41,11 @@ const parseJsonp = <T>(raw: string): T => {
 };
 
 /**
- * 针对 report/list 与 report/jg 两种接口组装参数。
+ * 针对 report/list 与 report/jg 两种接口组装查询参数。
  */
 const buildParams = (category: ReportCategory) => {
   const config = CATEGORY_CONFIGS[category];
+
   const common = {
     cb: `datatable${Math.floor(Math.random() * 1_000_000)}`,
     pageSize: DEFAULT_PAGE_SIZE,
@@ -75,7 +76,7 @@ const http = axios.create({
 });
 
 /**
- * 抓取某一分类的列表数据，返回数组。
+ * 抓取指定分类的数据列表。
  */
 export const fetchCategoryList = async <T extends Record<string, unknown>>(
   category: ReportCategory,
@@ -89,7 +90,7 @@ export const fetchCategoryList = async <T extends Record<string, unknown>>(
       "User-Agent":
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36",
     },
-    responseType: "text", // 保持文本格式，后续自行解析 JSONP。
+    responseType: "text",
   });
 
   type ApiResponse = { data: T[]; hits: number };

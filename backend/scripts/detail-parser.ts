@@ -14,7 +14,7 @@ interface DetailResult {
 }
 
 /**
- * 将 encodeUrl 加上前缀拼出宏观/策略详情页。
+ * 根据 encodeUrl 拼接宏观/策略详情页链接。
  */
 const buildEncodeUrl = (path: string, encodeUrl: string | undefined) => {
   if (!encodeUrl) {
@@ -25,7 +25,7 @@ const buildEncodeUrl = (path: string, encodeUrl: string | undefined) => {
 };
 
 /**
- * 根据分类和列表记录返回详情页链接。
+ * 根据分类与列表记录返回详情页地址。
  */
 export const resolveDetailUrl = (
   category: ReportCategory,
@@ -76,7 +76,7 @@ const mapImpactLevel = (starValue?: string | number | null) => {
 };
 
 /**
- * 提取 zwinfo JSON 字符串并解析。
+ * 抽取详情页内的 zwinfo JSON 信息。
  */
 const extractZwinfo = (html: string) => {
   const match = html.match(/var\s+zwinfo\s*=\s*(\{[\s\S]*?\});/);
@@ -144,19 +144,23 @@ export const fetchDetailInfo = async (
     zwinfo?.star ?? zwinfo?.rating ?? null,
   );
 
-  // security 数组里通常包含股票代码和行业信息。
-  const securityList = (zwinfo?.security as Record<string, unknown>[]) ?? [];
-  const firstSecurity = securityList[0];
+  const securityList =
+    (zwinfo?.security as Record<string, unknown>[]) ?? [];
+  const firstSecurity = securityList[0] ?? {};
 
   return {
     summary,
     pdfUrl,
     topicTags,
     impactLevel,
-    stockCode: (firstSecurity?.stock as string | undefined) ?? null,
-    stockName: (firstSecurity?.short_name as string | undefined) ?? null,
+    stockCode: (firstSecurity.stock as string | undefined) ?? null,
+    stockName: (firstSecurity.short_name as string | undefined) ?? null,
     industryName:
-      (firstSecurity?.publish_relation as { publishName?: string }[])?.[0]
-        ?.publishName ?? (record.industryName as string | null) ?? null,
+      (
+        (firstSecurity.publish_relation as { publishName?: string }[]) ??
+        []
+      )[0]?.publishName ??
+      (record.industryName as string | null) ??
+      null,
   };
 };
