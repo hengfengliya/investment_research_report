@@ -13,7 +13,7 @@ function createPrismaClient() {
   if (!databaseUrl) {
     throw new Error("数据库连接字符串缺失，请在 Vercel 环境变量中配置 DATABASE_URL");
   }
-  console.log("[Prisma] 即将初始化客户端，目标数据库：", databaseUrl.split("@").at(-1));
+  console.log("[Prisma][2025-10-29-02] 即将初始化客户端，目标数据库：", databaseUrl.split("@").at(-1));
 
   return new PrismaClient({
     log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
