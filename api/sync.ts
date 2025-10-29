@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { handle } from "hono/vercel";
-import { syncKeySchema } from "../lib/validators";
+import { syncKeySchema } from "../backend/lib/validators";
 
 const app = new Hono();
 
@@ -19,7 +19,7 @@ app.post(async (c) => {
     }
 
     // 动态引入脚本，避免在无须同步时占用额外资源。
-    const { runSyncOnce } = await import("../scripts/sync-runner");
+    const { runSyncOnce } = await import("../backend/scripts/sync-runner");
     const summary = await runSyncOnce();
 
     return c.json({ success: true, data: summary });

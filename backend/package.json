@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "bun run --watch api/reports.ts",
+    "dev": "bun --watch server.ts",
+    "start": "bun run server.ts",
     "lint": "bunx biome check .",
     "prisma:generate": "bunx prisma generate"
   },
@@ -12,6 +13,7 @@
     "@prisma/client": "^5.20.0",
     "cheerio": "^1.0.0-rc.12",
     "hono": "^4.5.3",
+    "@hono/node-server": "^1.11.2",
     "p-limit": "^5.0.0",
     "zod": "^3.23.8"
   },
