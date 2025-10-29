@@ -3,5 +3,10 @@
   "outputDirectory": "frontend/dist",
   "env": {
     "NODE_VERSION": "20"
+  },
+  "functions": {
+    "api/**/*.ts": {
+      "includeFiles": "backend/**"
+    }
   }
 }
