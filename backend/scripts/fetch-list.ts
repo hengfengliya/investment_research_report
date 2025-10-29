@@ -1,13 +1,13 @@
-import axios from "axios";
+﻿import axios from "axios";
 import type { ReportCategory } from "./category-config";
 import { CATEGORY_CONFIGS } from "./category-config";
 
 const API_BASE = "https://reportapi.eastmoney.com/";
-const DEFAULT_PAGE_SIZE = Number(process.env.SYNC_PAGE_SIZE ?? "40"); // 每次抓取条数，默认 40。
-const LOOKBACK_DAYS = Number(process.env.SYNC_LOOKBACK_DAYS ?? "30"); // 回溯天数，默认近 30 天。
+const DEFAULT_PAGE_SIZE = Number(process.env.SYNC_PAGE_SIZE ?? "40");
+const LOOKBACK_DAYS = Number(process.env.SYNC_LOOKBACK_DAYS ?? "30");
 
 /**
- * 将当前日期按 offset 偏移，并格式化为 yyyy-mm-dd。
+ * 根据日期偏移量格式化日期为 yyyy-mm-dd，便于拼接查询条件。
  */
 const formatDate = (offset: number) => {
   const date = new Date();
@@ -16,12 +16,12 @@ const formatDate = (offset: number) => {
 };
 
 /**
- * 东方财富接口使用 JSONP，需要先剥离回调函数再解析。
+ * 东方财富部分接口返回 JSONP，需要手动剥离回调函数后再解析 JSON。
  */
 const parseJsonp = <T>(raw: string): T => {
   const trimmed = raw.trim();
 
-  // 部分接口偶尔直接返回 JSON。
+  // 有时直接返回标准 JSON，此时直接解析即可。
   if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
     return JSON.parse(trimmed) as T;
   }
@@ -32,16 +32,16 @@ const parseJsonp = <T>(raw: string): T => {
   }
 
   if (/^<!DOCTYPE/i.test(trimmed) || /^<html/i.test(trimmed)) {
-    throw new Error("接口返回 HTML，可能被风控或请求头不足");
+    throw new Error("接口返回 HTML，可能被风控或请求头不符合要求");
   }
 
   throw new Error(
-    `返回数据格式异常，无法解析 JSONP，样本：${trimmed.slice(0, 120)}`,
+    `返回数据格式异常，无法解析 JSONP，样例：${trimmed.slice(0, 120)}`,
   );
 };
 
 /**
- * 针对 report/list 与 report/jg 两种接口组装查询参数。
+ * 组装东方财富列表接口的查询参数，兼容 report/list 与 report/jg 两种模式。
  */
 const buildParams = (category: ReportCategory) => {
   const config = CATEGORY_CONFIGS[category];
@@ -76,7 +76,7 @@ const http = axios.create({
 });
 
 /**
- * 抓取指定分类的数据列表。
+ * 拉取指定分类的研报列表数据。
  */
 export const fetchCategoryList = async <T extends Record<string, unknown>>(
   category: ReportCategory,

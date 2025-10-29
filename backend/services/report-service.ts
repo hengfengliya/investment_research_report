@@ -1,4 +1,4 @@
-import type { Prisma } from "@prisma/client";
+﻿import type { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import type { ReportFilter } from "../types/report";
 
@@ -7,32 +7,39 @@ const DEFAULT_PAGE_SIZE = 20;
 const MAX_PAGE_SIZE = 100;
 
 /**
- * 将用户传入的筛选条件整理成 Prisma 可以理解�?where 子句�? */
+ * 将筛选条件转换成 Prisma 的查询结构，确保筛选逻辑集中管理。
+ */
 const buildWhere = (filter: ReportFilter): Prisma.ReportWhereInput => {
   const where: Prisma.ReportWhereInput = {};
 
   if (filter.category) {
-    // 筛选指定的研报类型，比�?stock、macro 等�?    where.category = filter.category;
+    // 根据研报分类筛选，例如 strategy、macro、industry、stock。
+    where.category = filter.category;
   }
 
   if (filter.org) {
-    // 机构名称模糊匹配，忽略大小写�?    where.org = { contains: filter.org, mode: "insensitive" };
+    // 机构名称模糊匹配，忽略大小写，方便搜索部分名称。
+    where.org = { contains: filter.org, mode: "insensitive" };
   }
 
   if (filter.author) {
-    // 作者同样采用模糊匹配，方便用户使用关键字查找�?    where.author = { contains: filter.author, mode: "insensitive" };
+    // 作者同样采用模糊匹配，兼容多作者或不同写法。
+    where.author = { contains: filter.author, mode: "insensitive" };
   }
 
   if (filter.industry) {
-    // 行业字段多出现在行业/个股报告中，这里同样用模糊匹配�?    where.industry = { contains: filter.industry, mode: "insensitive" };
+    // 行业字段主要出现在行业或个股报告中，同样模糊匹配。
+    where.industry = { contains: filter.industry, mode: "insensitive" };
   }
 
   if (filter.rating) {
-    // 投资评级（如“买入”“增持”）�?    where.rating = { contains: filter.rating, mode: "insensitive" };
+    // 投资评级字段（如 “买入”“增持”）使用模糊匹配满足不同表述。
+    where.rating = { contains: filter.rating, mode: "insensitive" };
   }
 
   if (filter.keyword) {
-    // 关键词匹配标题、摘要以及主题标签三个维度�?    where.OR = [
+    // 关键词同时匹配标题、摘要和主题标签，方便快速定位内容。
+    where.OR = [
       { title: { contains: filter.keyword, mode: "insensitive" } },
       { summary: { contains: filter.keyword, mode: "insensitive" } },
       { topicTags: { has: filter.keyword } },
@@ -40,7 +47,8 @@ const buildWhere = (filter: ReportFilter): Prisma.ReportWhereInput => {
   }
 
   if (filter.startDate || filter.endDate) {
-    // 处理日期区间，startDate/endDate 采用闭区间�?    where.date = {};
+    // 构造发布时间的闭区间筛选，确保日期过滤准确。
+    where.date = {};
     if (filter.startDate) {
       where.date.gte = new Date(filter.startDate);
     }
@@ -53,18 +61,22 @@ const buildWhere = (filter: ReportFilter): Prisma.ReportWhereInput => {
 };
 
 /**
- * 根据用户的排序选择返回合适的排序规则�? */
+ * 根据排序类型生成排序规则。
+ */
 const buildOrderBy = (
   sort: ReportFilter["sort"],
 ): Prisma.ReportOrderByWithRelationInput => {
   if (sort === "hot") {
-    // 目前没有热度字段，先预留为按 createdAt 降序�?    return { createdAt: "desc" };
+    // “热度”暂未实现，先用创建时间降序作为替代规则。
+    return { createdAt: "desc" };
   }
-  // 默认按发布日期由近到远排列�?  return { date: "desc" };
+  // 默认按照研报发布时间降序，保证最新内容优先展示。
+  return { date: "desc" };
 };
 
 /**
- * 获取研报列表，并返回分页信息�? */
+ * 查询研报列表并返回分页信息。
+ */
 export const listReports = async (filter: ReportFilter) => {
   const safePage = Math.max(DEFAULT_PAGE, filter.page ?? DEFAULT_PAGE);
   const requestedSize = filter.pageSize ?? DEFAULT_PAGE_SIZE;
@@ -73,7 +85,8 @@ export const listReports = async (filter: ReportFilter) => {
   const where = buildWhere(filter);
   const orderBy = buildOrderBy(filter.sort);
 
-  // 并行执行总数统计和列表查询，提高响应速度�?  const [total, items] = await Promise.all([
+  // 并行统计总数与列表，提高响应速度。
+  const [total, items] = await Promise.all([
     prisma.report.count({ where }),
     prisma.report.findMany({
       where,
@@ -88,18 +101,20 @@ export const listReports = async (filter: ReportFilter) => {
     page: safePage,
     pageSize: safePageSize,
     total,
-    totalPages: Math.ceil(total / safePageSize),
+    totalPages: Math.ceil(total / safePageSize) || 1,
   };
 };
 
 /**
- * 根据主键查找单条研报�? */
+ * 根据主键查询单条研报详情。
+ */
 export const getReportById = async (id: number) => {
   return prisma.report.findUnique({ where: { id } });
 };
 
 /**
- * 统计每个分类下的研报数量，方便前端展示�? */
+ * 统计各研报分类下的数量，供前端展示使用。
+ */
 export const getCategoryStats = async () => {
   const categories = await prisma.report.groupBy({
     by: ["category"],
@@ -111,4 +126,3 @@ export const getCategoryStats = async () => {
     count: item._count.category,
   }));
 };
-

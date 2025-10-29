@@ -1,4 +1,4 @@
-import axios from "axios";
+﻿import axios from "axios";
 import * as cheerio from "cheerio";
 import type { ReportCategory } from "./category-config";
 import { CATEGORY_CONFIGS } from "./category-config";
@@ -14,7 +14,7 @@ interface DetailResult {
 }
 
 /**
- * 根据 encodeUrl 拼接宏观/策略详情页链接。
+ * 根据 encodeUrl 生成行业/策略等详情页的完整链接。
  */
 const buildEncodeUrl = (path: string, encodeUrl: string | undefined) => {
   if (!encodeUrl) {
@@ -25,7 +25,7 @@ const buildEncodeUrl = (path: string, encodeUrl: string | undefined) => {
 };
 
 /**
- * 根据分类与列表记录返回详情页地址。
+ * 根据分类与列表记录推断详情页地址。
  */
 export const resolveDetailUrl = (
   category: ReportCategory,
@@ -51,7 +51,7 @@ export const resolveDetailUrl = (
 };
 
 /**
- * 将评级星级转换为高/中/低影响。
+ * 将星级评分转换为预估影响等级，方便前端展示。
  */
 const mapImpactLevel = (starValue?: string | number | null) => {
   if (starValue === undefined || starValue === null) {
@@ -76,7 +76,7 @@ const mapImpactLevel = (starValue?: string | number | null) => {
 };
 
 /**
- * 抽取详情页内的 zwinfo JSON 信息。
+ * 从详情页脚本中提取 zwinfo JSON，用于读取摘要、附件等信息。
  */
 const extractZwinfo = (html: string) => {
   const match = html.match(/var\s+zwinfo\s*=\s*(\{[\s\S]*?\});/);
@@ -91,7 +91,7 @@ const extractZwinfo = (html: string) => {
 };
 
 /**
- * 解析详情页，提取摘要、PDF 链接等信息。
+ * 抓取并解析研报详情，返回摘要、PDF、标签等核心信息。
  */
 export const fetchDetailInfo = async (
   category: ReportCategory,
@@ -124,25 +124,24 @@ export const fetchDetailInfo = async (
   const $ = cheerio.load(html);
   const keywords = $('meta[name="keywords"]').attr("content") ?? "";
   const topicTags = keywords
-    .split(/[,，、\s]+/)
+    .split(/[,，\s]+/)
     .map((tag) => tag.trim())
     .filter(Boolean);
 
   const zwinfo = extractZwinfo(html);
 
-  const summarySource =
-    (zwinfo?.notice_content as string | undefined) ?? "";
-  const summary = summarySource
-    .replace(/\s+/g, " ")
-    .slice(0, 200)
-    .trim();
+  const summarySource = (zwinfo?.notice_content as string | undefined) ?? "";
+  const summary = summarySource.replace(/\s+/g, " ").slice(0, 200).trim();
 
   const pdfUrlRaw = (zwinfo?.attach_url as string | undefined) ?? null;
   const pdfUrl = pdfUrlRaw ? pdfUrlRaw.split("?")[0] : null;
 
-  const impactLevel = mapImpactLevel(
-    zwinfo?.star ?? zwinfo?.rating ?? null,
-  );
+  const rawImpact = (zwinfo?.star ?? zwinfo?.rating ?? null) as
+    | string
+    | number
+    | null
+    | undefined;
+  const impactLevel = mapImpactLevel(rawImpact);
 
   const securityList =
     (zwinfo?.security as Record<string, unknown>[]) ?? [];

@@ -1,4 +1,4 @@
-import { serve } from "@hono/node-server";
+﻿import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import {
   getCategoryStats,
@@ -10,6 +10,9 @@ import { runSyncOnce } from "./scripts/sync-runner";
 
 const app = new Hono();
 
+/**
+ * 列表接口：解析查询参数后交由服务层处理，再统一包装响应。
+ */
 app.get("/api/reports", async (c) => {
   try {
     const query = listQuerySchema.parse(c.req.query());
@@ -27,6 +30,9 @@ app.get("/api/reports", async (c) => {
   }
 });
 
+/**
+ * 详情接口：校验路径参数并返回单条研报信息。
+ */
 app.get("/api/report/:id", async (c) => {
   const rawId = c.req.param("id");
   const id = Number.parseInt(rawId, 10);
@@ -42,11 +48,17 @@ app.get("/api/report/:id", async (c) => {
   return c.json({ success: true, data: report });
 });
 
+/**
+ * 分类统计接口：用于前端绘制分类概览。
+ */
 app.get("/api/categories", async (c) => {
   const stats = await getCategoryStats();
   return c.json({ success: true, data: stats });
 });
 
+/**
+ * 同步接口：校验密钥后触发一次抓取任务。
+ */
 app.post("/api/sync", async (c) => {
   try {
     const payload = syncKeySchema.parse(await c.req.json());

@@ -1,8 +1,8 @@
-import { z } from "zod";
+﻿import { z } from "zod";
 
 /**
- * 列表接口的查询参数校验。
- * z.coerce.number() 可以把字符串转成数字，方便直接读取 URL 参数。
+ * 列表接口的查询参数校验逻辑，统一限制分页与过滤条件格式。
+ * z.coerce.number 可以把字符串自动转换为数字，便于处理 URL 查询字符串。
  */
 export const listQuerySchema = z.object({
   page: z.coerce.number().int().min(1).optional(),
@@ -19,7 +19,7 @@ export const listQuerySchema = z.object({
 });
 
 /**
- * sync 接口简单用一个密钥做保护，防止被随意调用。
+ * 同步接口简单使用密钥校验，避免被外部随意触发。
  */
 export const syncKeySchema = z.object({
   key: z.string().min(1, "同步密钥不能为空"),
