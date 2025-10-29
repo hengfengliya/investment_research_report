@@ -7,13 +7,7 @@
   },
   "functions": {
     "api/**/*.ts": {
-      "includeFiles": [
-        "backend/dist/**",
-        "backend/scripts/**",
-        "backend/types/**",
-        "node_modules/.prisma/client/**",
-        "node_modules/@prisma/client/**"
-      ]
+      "includeFiles": "backend/dist/**"
     }
   },
   "rewrites": [

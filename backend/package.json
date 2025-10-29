@@ -6,7 +6,7 @@
     "dev": "bun --watch server.ts",
     "start": "bun run server.ts",
     "lint": "bunx biome check .",
-    "build": "npx tsc --project tsconfig.build.json",
+    "build": "npx tsc --project tsconfig.build.json && node ./scripts/postbuild.mjs",
     "prisma:generate": "npx prisma generate --schema ../prisma/schema.prisma"
   },
   "dependencies": {
