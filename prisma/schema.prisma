@@ -8,6 +8,7 @@ datasource db {
 // 使用默认路径，确保在 Vercel Serverless 环境中能正确找到
 generator client {
   provider = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
 // Report 模型对应研报数据表，字段来自 PRD 定义。
