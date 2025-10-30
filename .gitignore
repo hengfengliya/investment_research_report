@@ -22,3 +22,4 @@ Thumbs.db
 
 # 调试文件
 debug/
+package-lock.json
