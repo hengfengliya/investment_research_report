@@ -1,7 +1,9 @@
 ﻿import { Hono } from "hono";
 import type { Context } from "hono";
 import { handle } from "hono/vercel";
-import { createPrismaClient } from "../backend/dist/lib/prisma.js";
+import { db } from "../backend/dist/lib/db.js";
+import { reports } from "../backend/dist/lib/schema.js";
+import { count } from "drizzle-orm";
 
 const app = new Hono();
 
@@ -13,21 +15,25 @@ app.use("*", async (c, next) => {
 const handleCategories = async (c: Context) => {
   console.log("[API] /categories 请求进入");
 
-  // 每次请求创建新的 Prisma 客户端
-  const prisma = createPrismaClient();
-
   try {
-    const categories = await prisma.report.groupBy({
-      by: ["category"],
-      _count: { category: true },
-    });
+    // 使用 Drizzle 分组查询
+    // 注意：Drizzle 的分组查询语法
+    const categories = await db
+      .select({
+        category: reports.category,
+        count: count(),
+      })
+      .from(reports)
+      .groupBy(reports.category);
 
     const stats = categories.map((item) => ({
       category: item.category,
-      count: item._count.category,
+      count: item.count,
     }));
 
     console.log("[API] /categories 成功返回", stats.length, "个分类");
+
+    // ✅ 无需 disconnect - HTTP 请求自动清理
     return c.json({ success: true, data: stats });
   } catch (error) {
     console.error("[API] /categories 查询失败", error);
@@ -38,10 +44,6 @@ const handleCategories = async (c: Context) => {
       },
       500,
     );
-  } finally {
-    // 确保在 finally 块中断开连接
-    await prisma.$disconnect();
-    console.log("[API] /categories Prisma 客户端已释放");
   }
 };
 
