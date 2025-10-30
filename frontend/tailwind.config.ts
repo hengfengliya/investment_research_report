@@ -1,8 +1,8 @@
 import type { Config } from "tailwindcss";
 import forms from "@tailwindcss/forms";
-import lineClamp from "@tailwindcss/line-clamp";
 
 // Tailwind 配置：扫描模板、扩展品牌色（黑/白/橙）与常用插件
+// 注意：line-clamp 在 Tailwind v3+ 中已集成到核心中，无需额外插件
 export default {
   content: ["./index.html", "./src/**/*.{ts,tsx}"],
   theme: {
@@ -18,6 +18,6 @@ export default {
       },
     },
   },
-  plugins: [forms(), lineClamp()],
+  plugins: [forms()],
 } satisfies Config;
 
