@@ -1,4 +1,5 @@
 ﻿import { Hono } from "hono";
+import type { Context } from "hono";
 import { handle } from "hono/vercel";
 import { getCategoryStats } from "../backend/dist/services/report-service.js";
 
@@ -9,7 +10,7 @@ app.use("*", async (c, next) => {
   return next();
 });
 
-app.get("/", async (c) => {
+const handleCategories = async (c: Context) => {
   console.log("[API] /categories 请求进入");
   try {
     const stats = await getCategoryStats();
@@ -26,6 +27,9 @@ app.get("/", async (c) => {
       500,
     );
   }
-});
+};
+
+app.get("/", handleCategories);
+app.get("/categories", handleCategories);
 
 export default handle(app);

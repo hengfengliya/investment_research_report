@@ -1,10 +1,11 @@
 ﻿import { Hono } from "hono";
+import type { Context } from "hono";
 import { handle } from "hono/vercel";
 import { syncKeySchema } from "../backend/dist/lib/validators.js";
 
 const app = new Hono();
 
-app.post("/", async (c) => {
+const handleSync = async (c: Context) => {
   try {
     const body = await c.req.json();
     const payload = syncKeySchema.parse(body);
@@ -22,6 +23,9 @@ app.post("/", async (c) => {
       error instanceof Error ? error.message : "同步任务执行失败";
     return c.json({ success: false, message }, 400);
   }
-});
+};
+
+app.post("/", handleSync);
+app.post("/sync", handleSync);
 
 export default handle(app);

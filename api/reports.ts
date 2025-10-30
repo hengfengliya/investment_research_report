@@ -1,4 +1,5 @@
 ﻿import { Hono } from "hono";
+import type { Context } from "hono";
 import { handle } from "hono/vercel";
 import { listReports } from "../backend/dist/services/report-service.js";
 import { listQuerySchema } from "../backend/dist/lib/validators.js";
@@ -10,7 +11,7 @@ app.use("*", async (c, next) => {
   return next();
 });
 
-app.get("/", async (c) => {
+const handleReports = async (c: Context) => {
   console.log("[API] /reports 入参", c.req.query());
   try {
     const query = listQuerySchema.parse(c.req.query());
@@ -28,6 +29,9 @@ app.get("/", async (c) => {
       400,
     );
   }
-});
+};
+
+app.get("/", handleReports);
+app.get("/reports", handleReports);
 
 export default handle(app);
