@@ -1,0 +1,56 @@
+# GitHub Actions 工作流：每天自动抓取研报数据
+
+name: Daily Sync Research Reports
+
+# 触发条件
+on:
+  # 每天早上 8 点 (UTC 时区) 运行
+  # 北京时间是 UTC+8，所以 UTC 8 点 = 北京时间 16 点（下午4点）
+  schedule:
+    - cron: '0 8 * * *'
+
+  # 也可以手动触发（在 GitHub 网页上点击）
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: 检出代码
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: 安装 Bun
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      # Step 3: 安装依赖
+      - name: Install dependencies
+        run: |
+          cd backend
+          npm install
+
+      # Step 4: 生成 Prisma 客户端
+      - name: Generate Prisma client
+        run: |
+          cd backend
+          npx prisma generate --schema ../prisma/schema.prisma
+
+      # Step 5: 运行抓取脚本
+      - name: Run sync script
+        run: |
+          cd backend
+          bun run scripts/sync-runner.ts
+        env:
+          # 从 GitHub Secrets 读取敏感信息
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          SYNC_LOOKBACK_DAYS: 2
+          SYNC_CONCURRENCY: 8
+
+      # Step 6: 如果失败，发送通知（可选）
+      - name: Notify on failure
+        if: failure()
+        run: echo "❌ 数据抓取失败，请检查日志"

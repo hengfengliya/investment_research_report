@@ -91,9 +91,9 @@ npm run preview
   4. 使用 `cheerio` 解析 HTML，提取摘要、PDF、标签等
   5. 通过 Prisma 的 `upsert` 逻辑（findUnique + update/create）去重入库
 - **配置环境变量：**
-  - `SYNC_PAGE_SIZE`: 每次抓取条数（默认 40）
-  - `SYNC_LOOKBACK_DAYS`: 回溯天数（默认 30）
-  - `SYNC_CONCURRENCY`: 并发数（默认 4）
+  - `SYNC_LOOKBACK_DAYS`: 抓取最近多少天的数据（默认 2，推荐日常使用此值）
+  - `SYNC_CONCURRENCY`: 并发数（默认 8，已优化）
+  - `SYNC_PAGE_SIZE`: 每次抓取条数（默认 40，建议不改）
 - **关键文件：**
   - `scripts/fetch-list.ts`: 列表页抓取
   - `scripts/detail-parser.ts`: 详情页解析
@@ -178,7 +178,7 @@ npm run preview
 ### 数据同步策略
 - **手动触发：** 运行 `bun run scripts/sync-runner.ts`
 - **API 触发：** `POST /api/sync` 携带 `{ "key": "your-secret" }`
-- **生产环境建议：** 通过 GitHub Actions 定时任务（如每 6 小时）调用 sync 脚本或 API
+- **自动定时：** GitHub Actions 每天自动运行（见 `docs/github-actions-setup.md`）
 
 ### 调试技巧
 - **查看数据库：** `bunx prisma studio --schema ../prisma/schema.prisma`（启动可视化管理界面）
@@ -223,6 +223,15 @@ bunx prisma generate --schema ../prisma/schema.prisma
 3. 查看 Vercel Function Logs 获取详细错误信息
 
 ## 相关文档
+
+### 数据抓取相关
+- **快速使用指南：** `docs/quick-start-sync.md` ⭐⭐⭐ 推荐先看
+- **抓取机制详解：** `docs/sync-mechanism.md` - 深入理解抓取工作原理
+- **优化记录：** `docs/optimization-done.md` - 已完成的性能优化总结
+- **GitHub Actions 自动化：** `docs/github-actions-setup.md` - 每天自动抓取配置
+
+### 其他文档
 - **实施计划：** `docs/implementation-plan.md`
 - **开发进度日志：** `docs/progress.md`
+- **Serverless 超时调试：** `docs/serverless-timeout-debugging-guide.md`
 - **PRD 文档：** `PRD.md`（可能存在编码问题，建议转 UTF-8）
