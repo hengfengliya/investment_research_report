@@ -4,10 +4,10 @@ name: Daily Sync Research Reports
 
 # 触发条件
 on:
-  # 每天早上 8 点 (UTC 时区) 运行
-  # 北京时间是 UTC+8，所以 UTC 8 点 = 北京时间 16 点（下午4点）
+  # 每天早上 6 点 (北京时间) 运行
+  # 北京时间 UTC+8，所以 06:00 - 8 小时 = UTC 22:00（前一天晚上）
   schedule:
-    - cron: '0 8 * * *'
+    - cron: '0 22 * * *'
 
   # 也可以手动触发（在 GitHub 网页上点击）
   workflow_dispatch:
