@@ -1,5 +1,6 @@
-import { serve } from "@hono/node-server";
+ï»¿import { serve } from "@hono/node-server";
 import { Hono } from "hono";
+import { cors } from "hono/cors";
 import {
   getCategoryStats,
   getReportById,
@@ -10,9 +11,9 @@ import { runSyncOnce } from "./scripts/sync-runner.js";
 
 const app = new Hono();
 
-/**
- * ÁÐ±í½Ó¿Ú£º½âÎö²éÑ¯²ÎÊýºó½»ÓÉ·þÎñ²ã´¦Àí£¬ÔÙÍ³Ò»°ü×°ÏìÓ¦¡£
- */
+// å…è®¸æœ¬åœ°å‰ç«¯ï¼ˆ5173ï¼‰æˆ–å…¶ä»–åŸŸè°ƒç”¨ API
+app.use("/api/*", cors());
+
 app.get("/api/reports", async (c) => {
   try {
     const query = listQuerySchema.parse(c.req.query());
@@ -23,56 +24,47 @@ app.get("/api/reports", async (c) => {
       {
         success: false,
         message:
-          error instanceof Error ? error.message : "ÁÐ±í²éÑ¯Ê§°Ü£¬ÇëÉÔºóÔÙÊÔ",
+          error instanceof Error ? error.message : "åˆ—è¡¨æŸ¥è¯¢å¤±è´¥ï¼Œè¯·ç¨åŽå†è¯•",
       },
       400,
     );
   }
 });
 
-/**
- * ÏêÇé½Ó¿Ú£ºÐ£ÑéÂ·¾¶²ÎÊý²¢·µ»Øµ¥ÌõÑÐ±¨ÐÅÏ¢¡£
- */
 app.get("/api/report/:id", async (c) => {
   const rawId = c.req.param("id");
   const id = Number.parseInt(rawId, 10);
   if (Number.isNaN(id)) {
-    return c.json({ success: false, message: "ÑÐ±¨±àºÅ²»ÕýÈ·" }, 400);
+    return c.json({ success: false, message: "ç ”æŠ¥ç¼–å·ä¸æ­£ç¡®" }, 400);
   }
 
   const report = await getReportById(id);
   if (!report) {
-    return c.json({ success: false, message: "Î´ÕÒµ½¶ÔÓ¦ÑÐ±¨" }, 404);
+    return c.json({ success: false, message: "æœªæ‰¾åˆ°å¯¹åº”ç ”æŠ¥" }, 404);
   }
 
   return c.json({ success: true, data: report });
 });
 
-/**
- * ·ÖÀàÍ³¼Æ½Ó¿Ú£ºÓÃÓÚÇ°¶Ë»æÖÆ·ÖÀà¸ÅÀÀ¡£
- */
 app.get("/api/categories", async (c) => {
   const stats = await getCategoryStats();
   return c.json({ success: true, data: stats });
 });
 
-/**
- * Í¬²½½Ó¿Ú£ºÐ£ÑéÃÜÔ¿ºó´¥·¢Ò»´Î×¥È¡ÈÎÎñ¡£
- */
 app.post("/api/sync", async (c) => {
   try {
     const payload = syncKeySchema.parse(await c.req.json());
     const secret = process.env.SYNC_SECRET;
 
     if (!secret || payload.key !== secret) {
-      return c.json({ success: false, message: "Í¬²½ÃÜÔ¿´íÎó" }, 401);
+      return c.json({ success: false, message: "åŒæ­¥å¯†é’¥é”™è¯¯" }, 401);
     }
 
     const summary = await runSyncOnce();
     return c.json({ success: true, data: summary });
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : "Í¬²½ÈÎÎñÖ´ÐÐÊ§°Ü";
+      error instanceof Error ? error.message : "åŒæ­¥ä»»åŠ¡æ‰§è¡Œå¤±è´¥";
     return c.json({ success: false, message }, 400);
   }
 });
@@ -85,7 +77,6 @@ serve(
     port,
   },
   () => {
-    console.log(`±¾µØ·þÎñÒÑÆô¶¯£ºhttp://localhost:${port}`);
+    console.log(`æœ¬åœ°æœåŠ¡å™¨å¯åŠ¨äºŽ http://localhost:${port}`);
   },
 );
-
