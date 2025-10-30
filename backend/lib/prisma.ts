@@ -14,8 +14,12 @@ function createPrismaClient() {
     console.log("[Prisma] 移除 channel_binding=require 以兼容 Node.js 20 Serverless 运行时");
   }
 
+  // 添加连接池参数：限制连接数，设置超时
+  parsed.searchParams.set("connection_limit", "1");
+  parsed.searchParams.set("pool_timeout", "0");
+
   const databaseUrl = parsed.toString();
-  console.log("[Prisma][2025-10-30] 初始化客户端（懒加载模式），目标数据库：", databaseUrl.split("@").at(-1));
+  console.log("[Prisma][2025-10-30] 初始化客户端（连接池优化模式），目标数据库：", databaseUrl.split("@").at(-1));
 
   const client = new PrismaClient({
     log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],

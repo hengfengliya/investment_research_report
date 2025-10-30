@@ -19,6 +19,12 @@ const handleReports = async (c: Context) => {
     console.log("[API] /reports 成功返回", data.items.length, "条");
     const response = c.json({ success: true, data });
     console.log("[API] /reports 响应结束");
+
+    // 导入 prisma 实例，在响应后异步断开连接
+    const { prisma } = await import("../backend/dist/lib/prisma.js");
+    prisma.$disconnect().catch(() => {});
+    console.log("[API] /reports 已触发 Prisma 断开连接");
+
     return response;
   } catch (error) {
     console.error("[API] /reports 调用失败", error);

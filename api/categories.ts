@@ -17,6 +17,12 @@ const handleCategories = async (c: Context) => {
     console.log("[API] /categories 成功返回", stats.length, "个分类");
     const response = c.json({ success: true, data: stats });
     console.log("[API] /categories 响应结束");
+
+    // 导入 prisma 实例，在响应后异步断开连接
+    const { prisma } = await import("../backend/dist/lib/prisma.js");
+    prisma.$disconnect().catch(() => {});
+    console.log("[API] /categories 已触发 Prisma 断开连接");
+
     return response;
   } catch (error) {
     console.error("[API] /categories 查询失败", error);
