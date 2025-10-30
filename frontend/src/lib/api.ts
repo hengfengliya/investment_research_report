@@ -7,14 +7,10 @@ import type {
 } from "@shared-types/report";
 
 const API_BASE =
-  (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(
-    /\/$/,
-    "",
-  ) ?? "/api";
+  (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, "") ??
+  "/api";
 
-/**
- * 将过滤条件对象转成查询字符串。
- */
+// 将过滤条件对象转成查询字符串
 const buildQueryString = (params: Record<string, unknown>) => {
   const query = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => {
@@ -24,9 +20,7 @@ const buildQueryString = (params: Record<string, unknown>) => {
   return query.toString();
 };
 
-/**
- * 通用的 GET 请求封装，默认抛出异常提示。
- */
+// 通用 GET 请求封装，默认抛出异常提示
 const get = async <T>(path: string, params?: Record<string, unknown>) => {
   const search = params ? `?${buildQueryString(params)}` : "";
   const response = await fetch(`${API_BASE}${path}${search}`);
@@ -87,3 +81,4 @@ export const triggerSync = async (key: string) => {
 
   return payload.data;
 };
+

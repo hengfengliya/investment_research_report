@@ -5,9 +5,7 @@ import type { Report } from "@shared-types/report";
 
 const formatDateTime = (value: string) => {
   const date = new Date(value);
-  return Number.isNaN(date.getTime())
-    ? value
-    : date.toLocaleString("zh-CN");
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleString("zh-CN");
 };
 
 const ReportDetailPage = () => {
@@ -23,9 +21,7 @@ const ReportDetailPage = () => {
 
     getReportDetail(id)
       .then(setReport)
-      .catch((err) =>
-        setError(err instanceof Error ? err.message : "加载失败"),
-      )
+      .catch((err) => setError(err instanceof Error ? err.message : "加载失败"))
       .finally(() => setLoading(false));
   }, [id]);
 
@@ -56,19 +52,16 @@ const ReportDetailPage = () => {
   return (
     <article className="space-y-5">
       <header className="space-y-2 rounded bg-white p-6 shadow">
-        <Link to="/" className="text-sm text-brand-primary hover:underline">
+        <Link to="/" className="text-sm text-brand-600 hover:underline">
           ← 返回列表
         </Link>
         <h1 className="text-2xl font-bold text-slate-900">{report.title}</h1>
         <p className="text-sm text-slate-500">
-          {formatDateTime(report.date)} · {report.org ?? "未知机构"} ·{" "}
-          {report.author ?? "作者未公布"}
+          {formatDateTime(report.date)} · {report.org ?? "未知机构"} · {report.author ?? "作者未公布"}
         </p>
         <div className="flex flex-wrap gap-2 text-sm">
           {report.rating && (
-            <span className="rounded bg-blue-100 px-3 py-1 text-blue-600">
-              评级：{report.rating}
-            </span>
+            <span className="rounded bg-blue-100 px-3 py-1 text-blue-600">评级：{report.rating}</span>
           )}
           {report.stockName && (
             <span className="rounded bg-indigo-100 px-3 py-1 text-indigo-600">
@@ -77,18 +70,12 @@ const ReportDetailPage = () => {
             </span>
           )}
           {report.industry && (
-            <span className="rounded bg-fuchsia-100 px-3 py-1 text-fuchsia-600">
-              行业：{report.industry}
-            </span>
+            <span className="rounded bg-fuchsia-100 px-3 py-1 text-fuchsia-600">行业：{report.industry}</span>
           )}
           {report.impactLevel && (
             <span className="rounded bg-amber-100 px-3 py-1 text-amber-600">
               影响力：
-              {report.impactLevel === "high"
-                ? "高"
-                : report.impactLevel === "medium"
-                  ? "中"
-                  : "低"}
+              {report.impactLevel === "high" ? "高" : report.impactLevel === "medium" ? "中" : "低"}
             </span>
           )}
         </div>
@@ -97,7 +84,7 @@ const ReportDetailPage = () => {
       <section className="rounded bg-white p-6 shadow">
         <h2 className="text-lg font-semibold text-slate-900">研报摘要</h2>
         <p className="mt-3 leading-relaxed text-slate-700">
-          {report.summary ?? "暂未提取摘要，可通过原文或 PDF 查看详细内容。"}
+          {report.summary ?? "暂未提取摘要，可通过原文/PDF 查看详细内容。"}
         </p>
       </section>
 
@@ -109,7 +96,7 @@ const ReportDetailPage = () => {
               href={report.pdfUrl}
               target="_blank"
               rel="noreferrer"
-              className="text-brand-primary hover:underline"
+              className="text-brand-600 hover:underline"
             >
               下载 PDF
             </a>
@@ -120,7 +107,7 @@ const ReportDetailPage = () => {
             rel="noreferrer"
             className="text-slate-600 hover:underline"
           >
-            查看东方财富原文
+            查看原文
           </a>
         </div>
       </section>
@@ -130,10 +117,7 @@ const ReportDetailPage = () => {
           <h2 className="text-lg font-semibold text-slate-900">主题标签</h2>
           <ul className="mt-3 flex flex-wrap gap-2 text-sm text-slate-600">
             {report.topicTags.map((tag) => (
-              <li
-                key={tag}
-                className="rounded-full border border-slate-200 px-3 py-1"
-              >
+              <li key={tag} className="rounded-full border border-slate-200 px-3 py-1">
                 #{tag}
               </li>
             ))}

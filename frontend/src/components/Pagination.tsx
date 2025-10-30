@@ -5,7 +5,7 @@ interface PaginationProps {
 }
 
 /**
- * Pagination 提供简单的上一页、下一页按钮。
+ * Pagination 组件：提供“上一页/下一页”基础分页
  */
 const Pagination = ({ page, totalPages, onChange }: PaginationProps) => {
   const canPrev = page > 1;
@@ -37,3 +37,4 @@ const Pagination = ({ page, totalPages, onChange }: PaginationProps) => {
 };
 
 export default Pagination;
+

@@ -3,6 +3,8 @@ import type { Report } from "@shared-types/report";
 
 interface ReportCardProps {
   report: Report;
+  // 高亮关键词：用于标题与摘要的命中高亮
+  highlightKeyword?: string;
 }
 
 const IMPACT_COLOR: Record<NonNullable<Report["impactLevel"]>, string> = {
@@ -11,9 +13,7 @@ const IMPACT_COLOR: Record<NonNullable<Report["impactLevel"]>, string> = {
   low: "bg-emerald-100 text-emerald-600",
 };
 
-/**
- * 将 ISO 字符串转成更友好的日期格式。
- */
+// 将 ISO 字符串转为日期（YYYY/MM/DD）
 const formatDate = (value: string) => {
   const date = new Date(value);
   return Number.isNaN(date.getTime())
@@ -21,16 +21,32 @@ const formatDate = (value: string) => {
     : date.toLocaleDateString("zh-CN");
 };
 
-const ReportCard = ({ report }: ReportCardProps) => {
-  const impactBadge =
-    report.impactLevel && IMPACT_COLOR[report.impactLevel];
+// 将文本中匹配到的关键字高亮显示（大小写不敏感，简单直观）
+const highlight = (text: string, keyword?: string) => {
+  if (!keyword) return text;
+  const safe = keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  if (!safe) return text;
+  const parts = text.split(new RegExp(`(${safe})`, "gi"));
+  return parts.map((part, idx) =>
+    part.toLowerCase() === keyword.toLowerCase() ? (
+      <mark key={idx} className="bg-transparent text-brand-600 font-semibold">
+        {part}
+      </mark>
+    ) : (
+      <span key={idx}>{part}</span>
+    ),
+  );
+};
+
+const ReportCard = ({ report, highlightKeyword }: ReportCardProps) => {
+  const impactBadge = report.impactLevel && IMPACT_COLOR[report.impactLevel];
 
   return (
     <article className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
       <header className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <h2 className="text-lg font-semibold text-slate-900">
-          <Link to={`/reports/${report.id}`} className="hover:text-brand-primary">
-            {report.title}
+          <Link to={`/reports/${report.id}`} className="hover:text-brand-600">
+            {highlight(report.title, highlightKeyword)}
           </Link>
         </h2>
         <span className="text-sm text-slate-500">
@@ -38,8 +54,10 @@ const ReportCard = ({ report }: ReportCardProps) => {
         </span>
       </header>
 
-      <p className="mt-3 text-sm leading-relaxed text-slate-600">
-        {report.summary ?? "暂未提取摘要，可点击查看详情。"}
+      <p className="mt-3 text-sm leading-relaxed text-slate-600 line-clamp-2">
+        {report.summary
+          ? highlight(report.summary, highlightKeyword)
+          : "暂未提取摘要，可点击查看详情。"}
       </p>
 
       <div className="mt-4 flex flex-wrap items-center gap-2 text-sm">
@@ -84,10 +102,7 @@ const ReportCard = ({ report }: ReportCardProps) => {
       )}
 
       <footer className="mt-4 flex flex-wrap gap-3 text-sm">
-        <Link
-          to={`/reports/${report.id}`}
-          className="text-brand-primary hover:underline"
-        >
+        <Link to={`/reports/${report.id}`} className="text-brand-600 hover:underline">
           查看详情
         </Link>
         {report.pdfUrl && (

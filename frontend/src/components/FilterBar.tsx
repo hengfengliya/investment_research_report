@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { ReportFilter, ReportCategory } from "@shared-types/report";
 
 interface FilterBarProps {
@@ -27,9 +28,13 @@ const SORT_OPTIONS: Array<{ value: NonNullable<ReportFilter["sort"]>; label: str
 ];
 
 /**
- * FilterBar 负责展示筛选表单，并通过回调把用户输入回传给父组件。
+ * FilterBar：筛选表单组件
+ * - 第一层（常用）：关键词/类型/排序 + 操作按钮
+ * - 第二层（更多筛选，可折叠）：机构/作者/开始-结束日期
  */
 const FilterBar = ({ filters, onChange, onApply, onReset }: FilterBarProps) => {
+  const [showMore, setShowMore] = useState(false);
+
   const handleChange = (
     key: keyof ReportFilter,
     event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -39,14 +44,13 @@ const FilterBar = ({ filters, onChange, onApply, onReset }: FilterBarProps) => {
 
   return (
     <section className="rounded-lg bg-white p-4 shadow">
+      {/* 第一层：常用筛选（横排） */}
       <div className="grid gap-4 md:grid-cols-3">
         <label className="flex flex-col gap-1 text-sm">
           <span className="text-slate-500">研报类型</span>
           <select
             value={filters.category ?? "all"}
-            onChange={(event) =>
-              handleChange("category", event)
-            }
+            onChange={(event) => handleChange("category", event)}
             className="rounded border border-slate-200 p-2"
           >
             {CATEGORY_OPTIONS.map((option) => (
@@ -57,52 +61,12 @@ const FilterBar = ({ filters, onChange, onApply, onReset }: FilterBarProps) => {
           </select>
         </label>
 
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-slate-500">关键字</span>
+        <label className="flex flex-col gap-1 text-sm md:col-span-1">
+          <span className="text-slate-500">关键词</span>
           <input
             value={filters.keyword ?? ""}
             onChange={(event) => handleChange("keyword", event)}
             placeholder="输入标题或摘要中的关键词"
-            className="rounded border border-slate-200 p-2"
-          />
-        </label>
-
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-slate-500">发布机构</span>
-          <input
-            value={filters.org ?? ""}
-            onChange={(event) => handleChange("org", event)}
-            placeholder="如：中信证券"
-            className="rounded border border-slate-200 p-2"
-          />
-        </label>
-
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-slate-500">作者</span>
-          <input
-            value={filters.author ?? ""}
-            onChange={(event) => handleChange("author", event)}
-            placeholder="输入分析师姓名"
-            className="rounded border border-slate-200 p-2"
-          />
-        </label>
-
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-slate-500">开始日期</span>
-          <input
-            type="date"
-            value={filters.startDate ?? ""}
-            onChange={(event) => handleChange("startDate", event)}
-            className="rounded border border-slate-200 p-2"
-          />
-        </label>
-
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-slate-500">结束日期</span>
-          <input
-            type="date"
-            value={filters.endDate ?? ""}
-            onChange={(event) => handleChange("endDate", event)}
             className="rounded border border-slate-200 p-2"
           />
         </label>
@@ -123,10 +87,11 @@ const FilterBar = ({ filters, onChange, onApply, onReset }: FilterBarProps) => {
         </label>
       </div>
 
-      <div className="mt-4 flex flex-wrap gap-3">
+      {/* 操作按钮区 */}
+      <div className="mt-4 flex flex-wrap items-center gap-3">
         <button
           onClick={onApply}
-          className="rounded bg-brand-primary px-4 py-2 text-white hover:bg-blue-600"
+          className="rounded bg-brand-500 px-4 py-2 text-white hover:bg-brand-600"
         >
           应用筛选
         </button>
@@ -136,9 +101,61 @@ const FilterBar = ({ filters, onChange, onApply, onReset }: FilterBarProps) => {
         >
           重置条件
         </button>
+        <button
+          onClick={() => setShowMore((v) => !v)}
+          className="rounded px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
+        >
+          {showMore ? "收起更多筛选" : "更多筛选"}
+        </button>
       </div>
+
+      {/* 第二层：更多筛选（可折叠） */}
+      {showMore && (
+        <div className="mt-4 grid gap-4 md:grid-cols-4">
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="text-slate-500">发布机构</span>
+            <input
+              value={filters.org ?? ""}
+              onChange={(event) => handleChange("org", event)}
+              placeholder="如：中信证券"
+              className="rounded border border-slate-200 p-2"
+            />
+          </label>
+
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="text-slate-500">作者</span>
+            <input
+              value={filters.author ?? ""}
+              onChange={(event) => handleChange("author", event)}
+              placeholder="输入分析师姓名"
+              className="rounded border border-slate-200 p-2"
+            />
+          </label>
+
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="text-slate-500">开始日期</span>
+            <input
+              type="date"
+              value={filters.startDate ?? ""}
+              onChange={(event) => handleChange("startDate", event)}
+              className="rounded border border-slate-200 p-2"
+            />
+          </label>
+
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="text-slate-500">结束日期</span>
+            <input
+              type="date"
+              value={filters.endDate ?? ""}
+              onChange={(event) => handleChange("endDate", event)}
+              className="rounded border border-slate-200 p-2"
+            />
+          </label>
+        </div>
+      )}
     </section>
   );
 };
 
 export default FilterBar;
+
