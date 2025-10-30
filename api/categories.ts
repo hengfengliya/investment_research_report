@@ -15,7 +15,9 @@ const handleCategories = async (c: Context) => {
   try {
     const stats = await getCategoryStats();
     console.log("[API] /categories 成功返回", stats.length, "个分类");
-    return c.json({ success: true, data: stats });
+    const response = c.json({ success: true, data: stats });
+    console.log("[API] /categories 响应结束");
+    return response;
   } catch (error) {
     console.error("[API] /categories 查询失败", error);
     return c.json(

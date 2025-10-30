@@ -17,7 +17,9 @@ const handleReports = async (c: Context) => {
     const query = listQuerySchema.parse(c.req.query());
     const data = await listReports(query);
     console.log("[API] /reports 成功返回", data.items.length, "条");
-    return c.json({ success: true, data });
+    const response = c.json({ success: true, data });
+    console.log("[API] /reports 响应结束");
+    return response;
   } catch (error) {
     console.error("[API] /reports 调用失败", error);
     return c.json(
