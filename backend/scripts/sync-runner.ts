@@ -4,11 +4,11 @@ import type { ReportCategory } from "./category-config.js";
 import { fetchCategoryList } from "./fetch-list.js";
 import { fetchDetailInfo, resolveDetailUrl } from "./detail-parser.js";
 /**
- * ¿ØÖÆÍ¬Ê±´¦ÀíµÄÏêÇé×¥È¡ÊýÁ¿£¬±ÜÃâÑ¹¿å½Ó¿Ú»ò±¾»ú´ø¿í¡£
+ * å¹¶å‘æŠ“å–è¯¦æƒ…é¡µçš„å¹¶å‘æ•°ï¼ˆå»ºè®® 6-8ï¼Œè¿‡é«˜ä¼šè¢«é™æµï¼‰
  */
-const CONCURRENCY = Number(process.env.SYNC_CONCURRENCY ?? "4");
+const CONCURRENCY = Number(process.env.SYNC_CONCURRENCY ?? "8");
 /**
- * ¹Ì¶¨Í¬²½Ë³Ðò£¬ÓÅÏÈ×¥²ßÂÔ¡¢ºê¹Û£¬ÔÙ´¦ÀíÐÐÒµºÍ¸ö¹É£¬·½±ã¹Û²ìÈÕÖ¾¡£
+ * ï¿½Ì¶ï¿½Í¬ï¿½ï¿½Ë³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×¥ï¿½ï¿½ï¿½Ô¡ï¿½ï¿½ï¿½Û£ï¿½ï¿½Ù´ï¿½ï¿½ï¿½ï¿½ï¿½Òµï¿½Í¸ï¿½ï¿½É£ï¿½ï¿½ï¿½ï¿½ï¿½Û²ï¿½ï¿½ï¿½Ö¾ï¿½ï¿½
  */
 const CATEGORY_SEQUENCE: ReportCategory[] = [
   "strategy",
@@ -40,7 +40,7 @@ const toNumber = (value: unknown) => {
 };
 const normalizeAuthors = (value: unknown) => {
   if (!value) return [] as string[];
-  const source = Array.isArray(value) ? value : String(value).split(/[,£¬\s]+/);
+  const source = Array.isArray(value) ? value : String(value).split(/[,ï¿½ï¿½\s]+/);
   return source
     .map((item) => {
       const text = String(item);
@@ -55,8 +55,8 @@ const ensureOrgName = (record: Record<string, unknown>) => {
   const org =
     (record.orgSName as string | undefined) ??
     (record.orgName as string | undefined) ??
-    "Î´Öª»ú¹¹";
-  return org.trim() || "Î´Öª»ú¹¹";
+    "Î´Öªï¿½ï¿½ï¿½ï¿½";
+  return org.trim() || "Î´Öªï¿½ï¿½ï¿½ï¿½";
 };
 const ensureDate = (value: unknown) => {
   const raw = value as string | undefined;
@@ -74,6 +74,33 @@ const syncCategory = async (category: ReportCategory): Promise<CategorySummary> 
   };
   const list = await fetchCategoryList<Record<string, unknown>>(category);
   summary.fetched = list.length;
+
+  // ä¼˜åŒ–2ï¼šæ‰¹é‡æŸ¥è¯¢å·²å­˜åœ¨çš„è®°å½•ï¼ˆè€Œä¸æ˜¯é€æ¡æŸ¥è¯¢ï¼‰
+  // æž„å»ºå”¯ä¸€é”®åˆ—è¡¨ç”¨äºŽæ‰¹é‡æŸ¥è¯¢
+  const uniqueKeys = list.map((record) => ({
+    title: String(record.title ?? "").trim(),
+    date: ensureDate(record.publishDate),
+    org: ensureOrgName(record),
+  }));
+
+  // ä¸€æ¬¡æ€§ä»Žæ•°æ®åº“æŸ¥è¯¢æ‰€æœ‰å·²å­˜åœ¨çš„è®°å½•
+  const existingRecords = await prisma.report.findMany({
+    where: {
+      OR: uniqueKeys.map((key) => ({
+        title_date_org: key,
+      })),
+    },
+    select: { id: true, title: true, date: true, org: true },
+  });
+
+  // åœ¨å†…å­˜ä¸­æž„å»º Mapï¼Œå¿«é€ŸæŸ¥æ‰¾ï¼ˆO(1) æ—¶é—´å¤æ‚åº¦ï¼‰
+  const existingMap = new Map(
+    existingRecords.map((record) => [
+      `${record.title}|${record.date.toISOString()}|${record.org}`,
+      record.id,
+    ]),
+  );
+
   await Promise.all(
     list.map((record) =>
       limit(async () => {
@@ -113,25 +140,24 @@ const syncCategory = async (category: ReportCategory): Promise<CategorySummary> 
             summary.errors += 1;
             return;
           }
-          const uniqueWhere = {
-            title_date_org: {
-              title: reportData.title,
-              date: reportData.date,
-              org: reportData.org,
-            },
-          };
-          const existing = await prisma.report.findUnique({ where: uniqueWhere });
-          if (existing) {
-            await prisma.report.update({ where: { id: existing.id }, data: reportData });
+
+          // åœ¨å†…å­˜ä¸­æŸ¥æ‰¾æ˜¯å¦å·²å­˜åœ¨ï¼ˆé¿å…é¢å¤–çš„æ•°æ®åº“æŸ¥è¯¢ï¼‰
+          const mapKey = `${reportData.title}|${reportData.date.toISOString()}|${reportData.org}`;
+          const existingId = existingMap.get(mapKey);
+
+          if (existingId) {
+            // å·²å­˜åœ¨ â†’ æ›´æ–°
+            await prisma.report.update({ where: { id: existingId }, data: reportData });
             summary.updated += 1;
           } else {
+            // ä¸å­˜åœ¨ â†’ æ–°å¢ž
             await prisma.report.create({ data: reportData });
             summary.inserted += 1;
           }
         } catch (error) {
           summary.errors += 1;
           const message = error instanceof Error ? error.message : String(error);
-          console.error(`Í¬²½ ${category} ÑÐ±¨Ê§°Ü£º${message}`);
+          console.error(`åŒæ­¥ ${category} åˆ—è¡¨å¤±è´¥ï¼š${message}`);
         }
       }),
     ),
@@ -163,10 +189,10 @@ const isDirectRun =
 if (isDirectRun) {
   runSyncOnce()
     .then((summary) => {
-      console.log("Í¬²½Íê³É", JSON.stringify(summary, null, 2));
+      console.log("Í¬ï¿½ï¿½ï¿½ï¿½ï¿½", JSON.stringify(summary, null, 2));
     })
     .catch((error) => {
-      console.error("Í¬²½ÈÎÎñÊ§°Ü", error);
+      console.error("Í¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê§ï¿½ï¿½", error);
       process.exit(1);
     });
 }

@@ -131,7 +131,8 @@ export const fetchDetailInfo = async (
   const zwinfo = extractZwinfo(html);
 
   const summarySource = (zwinfo?.notice_content as string | undefined) ?? "";
-  const summary = summarySource.replace(/\s+/g, " ").slice(0, 200).trim();
+  // 抓取完整的摘要内容，去除多余空白符
+  const summary = summarySource.replace(/\s+/g, " ").trim();
 
   const pdfUrlRaw = (zwinfo?.attach_url as string | undefined) ?? null;
   const pdfUrl = pdfUrlRaw ? pdfUrlRaw.split("?")[0] : null;

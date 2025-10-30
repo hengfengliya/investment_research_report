@@ -4,7 +4,9 @@ import { CATEGORY_CONFIGS } from "./category-config.js";
 
 const API_BASE = "https://reportapi.eastmoney.com/";
 const DEFAULT_PAGE_SIZE = Number(process.env.SYNC_PAGE_SIZE ?? "40");
-const LOOKBACK_DAYS = Number(process.env.SYNC_LOOKBACK_DAYS ?? "30");
+
+// 抓取最近多少天的数据（无数量限制）
+const LOOKBACK_DAYS = Number(process.env.SYNC_LOOKBACK_DAYS ?? "2");
 
 /**
  * 根据日期偏移量格式化日期为 yyyy-mm-dd，便于拼接查询条件。
@@ -13,6 +15,27 @@ const formatDate = (offset: number) => {
   const date = new Date();
   date.setDate(date.getDate() + offset);
   return date.toISOString().slice(0, 10);
+};
+
+/**
+ * 计算两个日期之间的天数差（向下取整）
+ */
+const daysDiff = (startDate: string, endDate: string): number => {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  return Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+};
+
+/**
+ * 从数据数组中提取最早的发布日期（假设 publishDate 字段存在）
+ */
+const getOldestDate = (data: Record<string, unknown>[]): string | null => {
+  if (!data.length) return null;
+  const dates = data
+    .map((item) => item.publishDate as string | undefined)
+    .filter(Boolean) as string[];
+  if (!dates.length) return null;
+  return dates.sort()[0];
 };
 
 /**
@@ -76,24 +99,55 @@ const http = axios.create({
 });
 
 /**
- * 拉取指定分类的研报列表数据。
+ * 拉取指定分类的研报列表数据，支持自动翻页直到时间范围外。
  */
 export const fetchCategoryList = async <T extends Record<string, unknown>>(
   category: ReportCategory,
 ) => {
   const config = CATEGORY_CONFIGS[category];
+  const startDate = formatDate(-LOOKBACK_DAYS);
 
-  const response = await http.get<string>(config.endpoint, {
-    params: buildParams(category),
-    headers: {
-      Referer: config.referer,
-      "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36",
-    },
-    responseType: "text",
-  });
+  // 累积所有页面的数据
+  const allResults: T[] = [];
+  let pageNo = 1;
+  let shouldContinue = true;
 
-  type ApiResponse = { data: T[]; hits: number };
-  const parsed = parseJsonp<ApiResponse>(response.data);
-  return parsed.data ?? [];
+  while (shouldContinue) {
+    const params = buildParams(category);
+    params.pageNo = pageNo;
+
+    const response = await http.get<string>(config.endpoint, {
+      params,
+      headers: {
+        Referer: config.referer,
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36",
+      },
+      responseType: "text",
+    });
+
+    type ApiResponse = { data: T[]; hits: number };
+    const parsed = parseJsonp<ApiResponse>(response.data);
+    const currentPageData = parsed.data ?? [];
+
+    if (!currentPageData.length) {
+      // 没有数据了，停止翻页
+      shouldContinue = false;
+      break;
+    }
+
+    allResults.push(...currentPageData);
+
+    // 检查这一页的最早日期是否已经超出时间范围
+    const oldestDate = getOldestDate(currentPageData);
+    if (oldestDate && oldestDate < startDate) {
+      // 已经翻到时间范围外，停止翻页
+      shouldContinue = false;
+      break;
+    }
+
+    pageNo += 1;
+  }
+
+  return allResults;
 };
