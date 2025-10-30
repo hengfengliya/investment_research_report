@@ -1,11 +1,10 @@
 ﻿import { Hono } from "hono";
 import type { Context } from "hono";
 import { handle } from "hono/vercel";
-import { db } from "../backend/dist/lib/db.js";
-import { reports } from "../backend/dist/lib/schema.js";
-import { count } from "drizzle-orm";
+import { neon } from "@neondatabase/serverless";
 
 const app = new Hono();
+const sql = neon(process.env.DATABASE_URL!);
 
 app.use("*", async (c, next) => {
   console.log("[API] /categories path", c.req.path);
@@ -16,19 +15,14 @@ const handleCategories = async (c: Context) => {
   console.log("[API] /categories 请求进入");
 
   try {
-    // 使用 Drizzle 分组查询
-    // 注意：Drizzle 的分组查询语法
-    const categories = await db
-      .select({
-        category: reports.category,
-        count: count(),
-      })
-      .from(reports)
-      .groupBy(reports.category);
+    // 使用 Neon SQL 直接查询（避免 ORM 类型问题）
+    const categories = await sql(
+      `SELECT category, COUNT(*) as count FROM "Report" GROUP BY category`
+    );
 
-    const stats = categories.map((item) => ({
+    const stats = categories.map((item: any) => ({
       category: item.category,
-      count: item.count,
+      count: Number(item.count),
     }));
 
     console.log("[API] /categories 成功返回", stats.length, "个分类");
