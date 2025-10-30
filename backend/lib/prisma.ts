@@ -9,11 +9,19 @@ const globalCache = globalThis as unknown as { prisma?: PrismaClient };
  * 创建 Prisma 客户端，针对 Neon + Vercel Serverless 优化配置。
  */
 function createPrismaClient() {
-  const databaseUrl = process.env.DATABASE_URL;
-  if (!databaseUrl) {
+  const rawDatabaseUrl = process.env.DATABASE_URL;
+  if (!rawDatabaseUrl) {
     throw new Error("数据库连接字符串缺失，请在 Vercel 环境变量中配置 DATABASE_URL");
   }
-  console.log("[Prisma][2025-10-29-02] 即将初始化客户端，目标数据库：", databaseUrl.split("@").at(-1));
+
+  const parsed = new URL(rawDatabaseUrl);
+  if (parsed.searchParams.get("channel_binding") === "require") {
+    parsed.searchParams.delete("channel_binding");
+    console.log("[Prisma] 移除 channel_binding=require 以兼容 Node.js 20 Serverless 运行时");
+  }
+
+  const databaseUrl = parsed.toString();
+  console.log("[Prisma][2025-10-30] 即将初始化客户端，目标数据库：", databaseUrl.split("@").at(-1));
 
   return new PrismaClient({
     log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
@@ -43,7 +51,6 @@ if (!globalCache.prisma) {
  * Vercel Functions 会在适当时机调用此清理函数。
  */
 if (typeof process !== "undefined" && process.env.VERCEL) {
-  // 注册清理函数，在函数冷启动结束时断开
   process.on("beforeExit", async () => {
     await prisma.$disconnect();
   });
