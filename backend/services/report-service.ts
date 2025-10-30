@@ -1,4 +1,4 @@
-import type { Prisma } from "@prisma/client";
+ï»¿import type { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import type { ReportFilter } from "../types/report.js";
 
@@ -61,60 +61,73 @@ const buildOrderBy = (
 };
 
 export const listReports = async (filter: ReportFilter) => {
-  console.log("[Service] listReports µ÷ÓÃ£¬²ÎÊı:", filter);
+  console.log("[Service] listReports è°ƒç”¨å‚æ•°:", filter);
   await prisma.$connect();
-  console.log("[Service] listReports ÒÑÁ¬½ÓÊı¾İ¿â");
+  console.log("[Service] listReports å·²è¿æ¥æ•°æ®åº“");
 
-  const safePage = Math.max(DEFAULT_PAGE, filter.page ?? DEFAULT_PAGE);
-  const requestedSize = filter.pageSize ?? DEFAULT_PAGE_SIZE;
-  const safePageSize = Math.min(Math.max(1, requestedSize), MAX_PAGE_SIZE);
+  try {
+    const safePage = Math.max(DEFAULT_PAGE, filter.page ?? DEFAULT_PAGE);
+    const requestedSize = filter.pageSize ?? DEFAULT_PAGE_SIZE;
+    const safePageSize = Math.min(Math.max(1, requestedSize), MAX_PAGE_SIZE);
 
-  const where = buildWhere(filter);
-  const orderBy = buildOrderBy(filter.sort);
+    const where = buildWhere(filter);
+    const orderBy = buildOrderBy(filter.sort);
 
-  console.log("[Service] listReports ²éÑ¯Ìõ¼ş:", { where, orderBy, safePage, safePageSize });
+    console.log("[Service] listReports æŸ¥è¯¢æ¡ä»¶:", { where, orderBy, safePage, safePageSize });
 
-  const [total, items] = await Promise.all([
-    prisma.report.count({ where }),
-    prisma.report.findMany({
-      where,
-      orderBy,
-      skip: (safePage - 1) * safePageSize,
-      take: safePageSize,
-    }),
-  ]);
+    const [total, items] = await Promise.all([
+      prisma.report.count({ where }),
+      prisma.report.findMany({
+        where,
+        orderBy,
+        skip: (safePage - 1) * safePageSize,
+        take: safePageSize,
+      }),
+    ]);
 
-  console.log("[Service] listReports ²éÑ¯½áÊø£¬×ÜÁ¿:", total);
+    console.log("[Service] listReports æŸ¥è¯¢å®Œæˆæ¡æ•°:", total);
 
-  return {
-    items,
-    page: safePage,
-    pageSize: safePageSize,
-    total,
-    totalPages: Math.ceil(total / safePageSize) || 1,
-  };
+    return {
+      items,
+      page: safePage,
+      pageSize: safePageSize,
+      total,
+      totalPages: Math.ceil(total / safePageSize) || 1,
+    };
+  } finally {
+    await prisma.$disconnect();
+    console.log("[Service] listReports å·²æ–­å¼€æ•°æ®åº“è¿æ¥");
+  }
 };
 
 export const getReportById = async (id: number) => {
   console.log("[Service] getReportById", id);
   await prisma.$connect();
-  return prisma.report.findUnique({ where: { id } });
+  try {
+    return await prisma.report.findUnique({ where: { id } });
+  } finally {
+    await prisma.$disconnect();
+    console.log("[Service] getReportById å·²æ–­å¼€æ•°æ®åº“è¿æ¥");
+  }
 };
 
 export const getCategoryStats = async () => {
-  console.log("[Service] getCategoryStats µ÷ÓÃ");
+  console.log("[Service] getCategoryStats è°ƒç”¨");
   await prisma.$connect();
+  try {
+    const categories = await prisma.report.groupBy({
+      by: ["category"],
+      _count: { category: true },
+    });
 
-  const categories = await prisma.report.groupBy({
-    by: ["category"],
-    _count: { category: true },
-  });
+    console.log("[Service] getCategoryStats æŸ¥è¯¢å®Œæˆåˆ†ç±»æ•°é‡:", categories.length);
 
-  console.log("[Service] getCategoryStats ²éÑ¯½áÊø£¬·ÖÀàÊıÁ¿:", categories.length);
-
-  return categories.map((item) => ({
-    category: item.category,
-    count: item._count.category,
-  }));
+    return categories.map((item) => ({
+      category: item.category,
+      count: item._count.category,
+    }));
+  } finally {
+    await prisma.$disconnect();
+    console.log("[Service] getCategoryStats å·²æ–­å¼€æ•°æ®åº“è¿æ¥");
+  }
 };
-
