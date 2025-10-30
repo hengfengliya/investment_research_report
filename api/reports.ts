@@ -51,13 +51,11 @@ const handleReports = async (c: Context) => {
     // 使用 Neon SQL 直接查询（避免 ORM 类型问题）
     const [totalResult, items] = await Promise.all([
       // 获取总数
-      sql(`SELECT COUNT(*) as count FROM "Report"${whereClause}`, ...whereParams),
+      sql(`SELECT COUNT(*) as count FROM "Report"${whereClause}`, whereParams),
       // 获取分页数据
       sql(
         `SELECT * FROM "Report"${whereClause} ORDER BY date DESC LIMIT $${whereParams.length + 1} OFFSET $${whereParams.length + 2}`,
-        ...whereParams,
-        safePageSize,
-        offset
+        [...whereParams, safePageSize, offset]
       ),
     ]);
 
