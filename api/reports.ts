@@ -1,61 +1,54 @@
-﻿import { Hono } from "hono";
-import type { Context } from "hono";
-import { handle } from "hono/vercel";
+﻿// 原生 Vercel API Routes - 不使用 Hono 框架
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { neon } from "@neondatabase/serverless";
-import { listQuerySchema } from "../backend/dist/lib/validators.js";
 
-const app = new Hono();
 const sql = neon(process.env.DATABASE_URL!);
 
-app.use("*", async (c, next) => {
-  console.log("[API] /reports path", c.req.path, c.req.query());
-  return next();
-});
-
-const handleReports = async (c: Context) => {
-  console.log("[API] /reports 入参", c.req.query());
+export default async (req: VercelRequest, res: VercelResponse) => {
+  console.log("[API] /reports 请求进入", { method: req.method, path: req.url, query: req.query });
 
   try {
-    const query = listQuerySchema.parse(c.req.query());
+    // 解析查询参数
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const pageSize = Math.min(Math.max(1, parseInt(req.query.pageSize as string) || 20), 100);
+    const offset = (page - 1) * pageSize;
+    const category = req.query.category as string;
+    const org = req.query.org as string;
+    const keyword = req.query.keyword as string;
 
-    // 分页参数
-    const safePage = Math.max(1, query.page ?? 1);
-    const safePageSize = Math.min(Math.max(1, query.pageSize ?? 20), 100);
-    const offset = (safePage - 1) * safePageSize;
+    console.log("[API] /reports 入参解析完成:", { page, pageSize, category, org, keyword });
 
     // 构建 WHERE 条件
     const whereConditions: string[] = [];
     const whereParams: any[] = [];
 
-    if (query.category && query.category !== 'all') {
+    if (category && category !== 'all') {
       whereConditions.push(`category = $${whereParams.length + 1}`);
-      whereParams.push(query.category);
+      whereParams.push(category);
     }
 
-    if (query.org) {
+    if (org) {
       whereConditions.push(`org ILIKE $${whereParams.length + 1}`);
-      whereParams.push(`%${query.org}%`);
+      whereParams.push(`%${org}%`);
     }
 
-    if (query.keyword) {
-      const keywordParam = `%${query.keyword}%`;
+    if (keyword) {
       whereConditions.push(`(title ILIKE $${whereParams.length + 1} OR summary ILIKE $${whereParams.length + 2})`);
-      whereParams.push(keywordParam, keywordParam);
+      whereParams.push(`%${keyword}%`, `%${keyword}%`);
     }
 
-    // 构建 WHERE 子句
     const whereClause = whereConditions.length > 0
       ? ` WHERE ${whereConditions.join(' AND ')}`
       : '';
 
-    // 使用 Neon SQL 直接查询（避免 ORM 类型问题）
+    console.log("[API] /reports 查询构建完成:", { whereClause, whereParams });
+
+    // 执行查询
     const [totalResult, items] = await Promise.all([
-      // 获取总数
       sql(`SELECT COUNT(*) as count FROM "Report"${whereClause}`, whereParams),
-      // 获取分页数据
       sql(
         `SELECT * FROM "Report"${whereClause} ORDER BY date DESC LIMIT $${whereParams.length + 1} OFFSET $${whereParams.length + 2}`,
-        [...whereParams, safePageSize, offset]
+        [...whereParams, pageSize, offset]
       ),
     ]);
 
@@ -65,27 +58,24 @@ const handleReports = async (c: Context) => {
 
     const data = {
       items,
-      page: safePage,
-      pageSize: safePageSize,
+      page,
+      pageSize,
       total,
-      totalPages: Math.ceil(total / safePageSize) || 1,
+      totalPages: Math.ceil(total / pageSize) || 1,
     };
 
-    // ✅ 无需 disconnect - HTTP 请求自动清理
-    return c.json({ success: true, data });
+    console.log("[API] /reports 即将返回响应");
+
+    // 直接返回 JSON（Vercel 原生方式）
+    res.setHeader('Content-Type', 'application/json');
+    res.status(200).json({ success: true, data });
+
+    console.log("[API] /reports 响应已发送");
   } catch (error) {
     console.error("[API] /reports 调用失败", error);
-    return c.json(
-      {
-        success: false,
-        message: error instanceof Error ? error.message : "列表查询失败，请稍后再试",
-      },
-      400,
-    );
+    res.status(400).json({
+      success: false,
+      message: error instanceof Error ? error.message : "列表查询失败，请稍后再试",
+    });
   }
 };
-
-app.get("/", handleReports);
-app.get("/reports", handleReports);
-
-export default handle(app);
