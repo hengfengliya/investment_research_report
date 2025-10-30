@@ -58,11 +58,26 @@ const ensureOrgName = (record: Record<string, unknown>) => {
     "δ֪����";
   return org.trim() || "δ֪����";
 };
+/**
+ * 规范化发布日期
+ * 东方财富返回的是 YYYY-MM-DD 格式，需要转换为当天开始的 UTC 时间
+ * 例如：2025-10-28 → 2025-10-28T00:00:00Z
+ */
 const ensureDate = (value: unknown) => {
   const raw = value as string | undefined;
   if (!raw) return new Date();
-  const date = new Date(raw);
-  return Number.isNaN(date.getTime()) ? new Date() : date;
+
+  // 验证是否为 YYYY-MM-DD 格式
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    // 尝试其他格式
+    const date = new Date(raw);
+    return Number.isNaN(date.getTime()) ? new Date() : date;
+  }
+
+  // 对于 YYYY-MM-DD，创建当天的 UTC 午夜时间
+  // 这样可以避免时区问题，确保同一天的记录日期一致
+  const [year, month, day] = raw.split('-').map(Number);
+  return new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
 };
 const syncCategory = async (category: ReportCategory): Promise<CategorySummary> => {
   const summary: CategorySummary = {
