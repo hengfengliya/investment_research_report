@@ -5,10 +5,11 @@ import { listQuerySchema } from "../backend/dist/lib/validators.js";
 
 const app = new Hono();
 
-/**
- * GET /api/reports
- * 作用：根据筛选条件返回研报列表。
- */
+app.use("*", async (c, next) => {
+  console.log("[API] /reports path", c.req.path, c.req.query());
+  return next();
+});
+
 app.get("/", async (c) => {
   console.log("[API] /reports 入参", c.req.query());
   try {

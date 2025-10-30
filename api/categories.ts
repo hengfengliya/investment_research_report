@@ -4,10 +4,11 @@ import { getCategoryStats } from "../backend/dist/services/report-service.js";
 
 const app = new Hono();
 
-/**
- * GET /api/categories
- * 作用：返回各个分类的研报数量。
- */
+app.use("*", async (c, next) => {
+  console.log("[API] /categories path", c.req.path);
+  return next();
+});
+
 app.get("/", async (c) => {
   console.log("[API] /categories 请求进入");
   try {
