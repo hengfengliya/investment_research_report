@@ -1,4 +1,4 @@
-import { Hono } from "hono";
+ï»¿import { Hono } from "hono";
 import { handle } from "hono/vercel";
 import { getCategoryStats } from "../backend/dist/services/report-service.js";
 
@@ -6,21 +6,21 @@ const app = new Hono();
 
 /**
  * GET /api/categories
- * ×÷ÓÃ£º·µ»Ø¸÷¸ö·ÖÀàµÄÑĞ±¨ÊıÁ¿¡£
+ * ä½œç”¨ï¼šè¿”å›å„ä¸ªåˆ†ç±»çš„ç ”æŠ¥æ•°é‡ã€‚
  */
-app.get(async (c) => {
-  console.log("[API] /categories ÇëÇó½øÈë");
+app.get("/", async (c) => {
+  console.log("[API] /categories è¯·æ±‚è¿›å…¥");
   try {
     const stats = await getCategoryStats();
-    console.log("[API] /categories ³É¹¦·µ»Ø", stats.length, "¸ö·ÖÀà");
+    console.log("[API] /categories æˆåŠŸè¿”å›", stats.length, "ä¸ªåˆ†ç±»");
     return c.json({ success: true, data: stats });
   } catch (error) {
-    console.error("·ÖÀàÍ³¼Æ²éÑ¯Ê§°Ü", error);
+    console.error("[API] /categories æŸ¥è¯¢å¤±è´¥", error);
     return c.json(
       {
         success: false,
         message:
-          error instanceof Error ? error.message : "·ÖÀàÍ³¼Æ²éÑ¯Ê§°Ü£¬ÇëÉÔºóÔÙÊÔ",
+          error instanceof Error ? error.message : "åˆ†ç±»ç»Ÿè®¡æŸ¥è¯¢å¤±è´¥ï¼Œè¯·ç¨åå†è¯•",
       },
       500,
     );

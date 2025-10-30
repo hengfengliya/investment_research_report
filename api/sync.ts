@@ -1,24 +1,18 @@
-import { Hono } from "hono";
+﻿import { Hono } from "hono";
 import { handle } from "hono/vercel";
 import { syncKeySchema } from "../backend/dist/lib/validators.js";
 
 const app = new Hono();
 
-/**
- * POST /api/sync
- * 作用：触发一次抓取任务。需要提供正确的密钥。
- */
-app.post(async (c) => {
+app.post("/", async (c) => {
   try {
-    const body = await c.req.json(); // 读取 JSON 请求体。
-    const payload = syncKeySchema.parse(body); // 校验密钥字段。
-    const secret = process.env.SYNC_SECRET; // 从环境变量读取真实密钥。
-
+    const body = await c.req.json();
+    const payload = syncKeySchema.parse(body);
+    const secret = process.env.SYNC_SECRET;
     if (!secret || payload.key !== secret) {
       return c.json({ success: false, message: "同步密钥错误" }, 401);
     }
 
-    // 动态引入脚本，避免在无须同步时占用额外资源。
     const { runSyncOnce } = await import("../backend/dist/scripts/sync-runner.js");
     const summary = await runSyncOnce();
 

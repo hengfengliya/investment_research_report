@@ -1,4 +1,4 @@
-import { Hono } from "hono";
+ï»¿import { Hono } from "hono";
 import { handle } from "hono/vercel";
 import { listReports } from "../backend/dist/services/report-service.js";
 import { listQuerySchema } from "../backend/dist/lib/validators.js";
@@ -7,29 +7,26 @@ const app = new Hono();
 
 /**
  * GET /api/reports
- * ×÷ÓÃ£º¸ù¾İÉ¸Ñ¡Ìõ¼ş·µ»ØÑĞ±¨ÁĞ±í¡£
+ * ä½œç”¨ï¼šæ ¹æ®ç­›é€‰æ¡ä»¶è¿”å›ç ”æŠ¥åˆ—è¡¨ã€‚
  */
-app.get(async (c) => {
-  console.log("[API] /reports Èë²Î", c.req.query());
+app.get("/", async (c) => {
+  console.log("[API] /reports å…¥å‚", c.req.query());
   try {
     const query = listQuerySchema.parse(c.req.query());
     const data = await listReports(query);
-    console.log("[API] /reports ³É¹¦·µ»Ø", data.items.length, "Ìõ");
+    console.log("[API] /reports æˆåŠŸè¿”å›", data.items.length, "æ¡");
     return c.json({ success: true, data });
   } catch (error) {
-    console.error("[API] /reports µ÷ÓÃÊ§°Ü", error);
+    console.error("[API] /reports è°ƒç”¨å¤±è´¥", error);
     return c.json(
       {
         success: false,
         message:
-          error instanceof Error ? error.message : "ÁĞ±í²éÑ¯Ê§°Ü£¬ÇëÉÔºóÔÙÊÔ",
+          error instanceof Error ? error.message : "åˆ—è¡¨æŸ¥è¯¢å¤±è´¥ï¼Œè¯·ç¨åå†è¯•",
       },
       400,
     );
   }
 });
 
-/**
- * Vercel ÒªÇóµ¼³öÒ»¸ö handle º¯ÊıÓÃÀ´´¦ÀíÇëÇó¡£
- */
 export default handle(app);
