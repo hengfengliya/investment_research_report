@@ -84,10 +84,15 @@ const syncCategory = async (category: ReportCategory): Promise<CategorySummary> 
   }));
 
   // 一次性从数据库查询所有已存在的记录
+  // 使用 AND 逻辑，因为 Prisma 不支持复合唯一键的 findMany
   const existingRecords = await prisma.report.findMany({
     where: {
       OR: uniqueKeys.map((key) => ({
-        title_date_org: key,
+        AND: [
+          { title: key.title },
+          { date: key.date },
+          { org: key.org },
+        ],
       })),
     },
     select: { id: true, title: true, date: true, org: true },
