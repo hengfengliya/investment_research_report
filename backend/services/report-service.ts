@@ -62,72 +62,54 @@ const buildOrderBy = (
 
 export const listReports = async (filter: ReportFilter) => {
   console.log("[Service] listReports 调用参数:", filter);
-  await prisma.$connect();
-  console.log("[Service] listReports 已连接数据库");
 
-  try {
-    const safePage = Math.max(DEFAULT_PAGE, filter.page ?? DEFAULT_PAGE);
-    const requestedSize = filter.pageSize ?? DEFAULT_PAGE_SIZE;
-    const safePageSize = Math.min(Math.max(1, requestedSize), MAX_PAGE_SIZE);
+  const safePage = Math.max(DEFAULT_PAGE, filter.page ?? DEFAULT_PAGE);
+  const requestedSize = filter.pageSize ?? DEFAULT_PAGE_SIZE;
+  const safePageSize = Math.min(Math.max(1, requestedSize), MAX_PAGE_SIZE);
 
-    const where = buildWhere(filter);
-    const orderBy = buildOrderBy(filter.sort);
+  const where = buildWhere(filter);
+  const orderBy = buildOrderBy(filter.sort);
 
-    console.log("[Service] listReports 查询条件:", { where, orderBy, safePage, safePageSize });
+  console.log("[Service] listReports 查询条件:", { where, orderBy, safePage, safePageSize });
 
-    const [total, items] = await Promise.all([
-      prisma.report.count({ where }),
-      prisma.report.findMany({
-        where,
-        orderBy,
-        skip: (safePage - 1) * safePageSize,
-        take: safePageSize,
-      }),
-    ]);
+  const [total, items] = await Promise.all([
+    prisma.report.count({ where }),
+    prisma.report.findMany({
+      where,
+      orderBy,
+      skip: (safePage - 1) * safePageSize,
+      take: safePageSize,
+    }),
+  ]);
 
-    console.log("[Service] listReports 查询完成条数:", total);
+  console.log("[Service] listReports 查询完成条数:", total);
 
-    return {
-      items,
-      page: safePage,
-      pageSize: safePageSize,
-      total,
-      totalPages: Math.ceil(total / safePageSize) || 1,
-    };
-  } finally {
-    await prisma.$disconnect();
-    console.log("[Service] listReports 已断开数据库连接");
-  }
+  return {
+    items,
+    page: safePage,
+    pageSize: safePageSize,
+    total,
+    totalPages: Math.ceil(total / safePageSize) || 1,
+  };
 };
 
 export const getReportById = async (id: number) => {
   console.log("[Service] getReportById", id);
-  await prisma.$connect();
-  try {
-    return await prisma.report.findUnique({ where: { id } });
-  } finally {
-    await prisma.$disconnect();
-    console.log("[Service] getReportById 已断开数据库连接");
-  }
+  return await prisma.report.findUnique({ where: { id } });
 };
 
 export const getCategoryStats = async () => {
   console.log("[Service] getCategoryStats 调用");
-  await prisma.$connect();
-  try {
-    const categories = await prisma.report.groupBy({
-      by: ["category"],
-      _count: { category: true },
-    });
 
-    console.log("[Service] getCategoryStats 查询完成分类数量:", categories.length);
+  const categories = await prisma.report.groupBy({
+    by: ["category"],
+    _count: { category: true },
+  });
 
-    return categories.map((item) => ({
-      category: item.category,
-      count: item._count.category,
-    }));
-  } finally {
-    await prisma.$disconnect();
-    console.log("[Service] getCategoryStats 已断开数据库连接");
-  }
+  console.log("[Service] getCategoryStats 查询完成分类数量:", categories.length);
+
+  return categories.map((item) => ({
+    category: item.category,
+    count: item._count.category,
+  }));
 };

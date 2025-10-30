@@ -15,7 +15,7 @@ function createPrismaClient() {
   }
 
   const databaseUrl = parsed.toString();
-  console.log("[Prisma][2025-10-30] 即将初始化客户端，目标数据库：", databaseUrl.split("@").at(-1));
+  console.log("[Prisma][2025-10-30] 初始化客户端（懒加载模式），目标数据库：", databaseUrl.split("@").at(-1));
 
   const client = new PrismaClient({
     log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
@@ -26,13 +26,6 @@ function createPrismaClient() {
     },
   });
 
-  client
-    .$connect()
-    .then(() => console.log("[Prisma] 数据库连接建立成功"))
-    .catch((error) => {
-      console.error("[Prisma] 数据库连接失败", error);
-    });
-
   return client;
 }
 
@@ -40,10 +33,4 @@ export const prisma = globalCache.prisma ?? createPrismaClient();
 
 if (!globalCache.prisma) {
   globalCache.prisma = prisma;
-}
-
-if (typeof process !== "undefined" && process.env.VERCEL) {
-  process.on("beforeExit", async () => {
-    await prisma.$disconnect();
-  });
 }
