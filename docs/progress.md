@@ -28,3 +28,7 @@ pm run vercel-build 按 prisma generate -> backend build -> frontend build 顺�
 - **部署复核**：待 Vercel 新部署完成后收集带“响应结束”日志的完整输出，继续观察是否仍触发 300 秒超时，并记录后续优化方案。
 
 > 说明：后续若增加缓存/后台任务或其他优化，需要在本记录更新阶段性结果，方便追踪。
+## 追加分析（2025-10-30）
+- 最新一版部署的 Vercel Function 日志显示，listReports 查询与 API 响应在几百毫秒内完成，并输出 "响应结束"，但函数仍在 5 分钟后超时，说明主逻辑已结束但仍有尾部异步任务未释放。
+- 初步定位为 ackend/lib/prisma.ts 中的默认行为：创建客户端时立即执行 client.()（并挂一个 Promise），以及注册的 process.on('beforeExit', ...) 钩子会在 Lambda 退出前再次执行异步 $disconnect()。这些后台 Promise 即便在响应返回后仍然运行，导致事件循环不为空，从而触发 300 秒超时。
+- 下一步计划：移除 createPrismaClient() 中的即时 $connect() 与 eforeExit 钩子，仅依赖各个 service 函数中 inally 的断连逻辑；完成后重新部署验证是否还有超时。
