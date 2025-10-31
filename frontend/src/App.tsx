@@ -75,38 +75,15 @@ const App = () => {
 
       {/* ========== 第二行：搜索 + 筛选区 ========== */}
       <div className="sticky top-16 z-40 bg-white border-b border-border-default">
-        <div className="px-8 py-4 flex items-center gap-4">
-          {/* 筛选按钮（汉堡菜单） */}
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className={`flex-shrink-0 p-2 rounded transition-all ${
-              sidebarOpen
-                ? "bg-brand-100 text-brand-600"
-                : "hover:bg-brand-50 text-text-secondary"
-            }`}
-            title="打开筛选"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
-              />
-            </svg>
-          </button>
-
-          {/* 搜索框：集成类型选择按钮 */}
+        <div className="px-8 py-4">
+          {/* 搜索框：集成筛选图标 + 类型选择按钮 */}
           <SearchBar
             searchKeyword={searchKeyword}
             onSearchChange={setSearchKeyword}
             searchCategory={searchCategory}
             onCategoryChange={setSearchCategory}
+            sidebarOpen={sidebarOpen}
+            onSidebarToggle={() => setSidebarOpen(!sidebarOpen)}
           />
         </div>
       </div>
