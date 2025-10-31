@@ -1,13 +1,23 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
+import { Card, CardBody, CardTitle, Badge, Button } from "@components/ui";
+import { SkeletonLoader, ErrorState } from "@components/StateComponents";
 import { getReportDetail } from "@lib/api";
 import type { Report } from "@shared-types/report";
 
-const formatDateTime = (value: string) => {
+/**
+ * 格式化日期时间（YYYY-MM-DD）
+ */
+const formatDate = (value: string) => {
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? value : date.toLocaleString("zh-CN");
+  return Number.isNaN(date.getTime())
+    ? value
+    : date.toLocaleDateString("zh-CN");
 };
 
+/**
+ * ReportDetailPage：研报详情页（金融极简白设计）
+ */
 const ReportDetailPage = () => {
   const { id } = useParams();
   const [report, setReport] = useState<Report | null>(null);
@@ -21,108 +31,170 @@ const ReportDetailPage = () => {
 
     getReportDetail(id)
       .then(setReport)
-      .catch((err) => setError(err instanceof Error ? err.message : "加载失败"))
+      .catch((err) => setError(err instanceof Error ? err.message : "加载失败，请稍后重试"))
       .finally(() => setLoading(false));
   }, [id]);
 
   if (loading) {
-    return (
-      <div className="rounded border border-slate-200 bg-white p-6 text-center text-slate-500">
-        正在加载研报详情，请稍候…
-      </div>
-    );
+    return <SkeletonLoader count={2} />;
   }
 
   if (error) {
     return (
-      <div className="rounded border border-red-200 bg-red-50 p-4 text-red-600">
-        {error}
-      </div>
+      <ErrorState
+        title="加载失败"
+        message={error}
+        action={{
+          label: "返回列表",
+          onClick: () => window.history.back(),
+        }}
+      />
     );
   }
 
   if (!report) {
     return (
-      <div className="rounded border border-slate-200 bg-white p-6 text-center text-slate-500">
-        未查询到该研报，可能已经被删除。
-      </div>
+      <ErrorState
+        title="未找到研报"
+        message="该研报可能已被删除或已过期，请返回列表重新选择。"
+        action={{
+          label: "返回列表",
+          onClick: () => window.history.back(),
+        }}
+      />
     );
   }
 
+  const impactLevelText = {
+    high: "高",
+    medium: "中",
+    low: "低",
+  };
+
   return (
-    <article className="space-y-5">
-      <header className="space-y-2 rounded bg-white p-6 shadow">
-        <Link to="/" className="text-sm text-brand-600 hover:underline">
-          ← 返回列表
-        </Link>
-        <h1 className="text-2xl font-bold text-slate-900">{report.title}</h1>
-        <p className="text-sm text-slate-500">
-          {formatDateTime(report.date)} · {report.org ?? "未知机构"} · {report.author ?? "作者未公布"}
-        </p>
-        <div className="flex flex-wrap gap-2 text-sm">
-          {report.rating && (
-            <span className="rounded bg-blue-100 px-3 py-1 text-blue-600">评级：{report.rating}</span>
-          )}
-          {report.stockName && (
-            <span className="rounded bg-indigo-100 px-3 py-1 text-indigo-600">
-              个股：{report.stockName}
-              {report.stockCode ? `（${report.stockCode}）` : ""}
-            </span>
-          )}
-          {report.industry && (
-            <span className="rounded bg-fuchsia-100 px-3 py-1 text-fuchsia-600">行业：{report.industry}</span>
-          )}
-          {report.impactLevel && (
-            <span className="rounded bg-amber-100 px-3 py-1 text-amber-600">
-              影响力：
-              {report.impactLevel === "high" ? "高" : report.impactLevel === "medium" ? "中" : "低"}
-            </span>
-          )}
-        </div>
-      </header>
+    <article className="space-y-6">
+      {/* 返回按钮 */}
+      <Link
+        to="/"
+        className="inline-flex text-sm text-link-default hover:text-opacity-80 transition-colors"
+      >
+        ← 返回列表
+      </Link>
 
-      <section className="rounded bg-white p-6 shadow">
-        <h2 className="text-lg font-semibold text-slate-900">研报摘要</h2>
-        <p className="mt-3 leading-relaxed text-slate-700">
-          {report.summary ?? "暂未提取摘要，可通过原文/PDF 查看详细内容。"}
-        </p>
-      </section>
+      {/* 标题与基本信息 */}
+      <Card>
+        <CardBody className="space-y-4">
+          <h1 className="text-2xl font-bold text-text-primary">{report.title}</h1>
 
-      <section className="rounded bg-white p-6 shadow">
-        <h2 className="text-lg font-semibold text-slate-900">下载与原文</h2>
-        <div className="mt-3 flex flex-wrap gap-4 text-sm">
-          {report.pdfUrl && (
-            <a
-              href={report.pdfUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="text-brand-600 hover:underline"
-            >
-              下载 PDF
+          {/* 元信息 */}
+          <div className="flex flex-wrap gap-2 text-sm text-text-secondary">
+            <span>{formatDate(report.date)}</span>
+            <span>·</span>
+            <span>{report.org ?? "未知机构"}</span>
+            {report.author && (
+              <>
+                <span>·</span>
+                <span>{report.author}</span>
+              </>
+            )}
+          </div>
+
+          {/* 标签组 */}
+          {(report.rating || report.stockName || report.industry || report.impactLevel) && (
+            <div className="flex flex-wrap gap-2">
+              {report.category && (
+                <Badge variant="default" size="sm">
+                  {report.category === "strategy" && "策略"}
+                  {report.category === "macro" && "宏观"}
+                  {report.category === "industry" && "行业"}
+                  {report.category === "stock" && "个股"}
+                </Badge>
+              )}
+              {report.rating && (
+                <Badge variant="filled" size="sm">
+                  评级：{report.rating}
+                </Badge>
+              )}
+              {report.stockName && (
+                <Badge variant="filled" size="sm">
+                  {report.stockName}
+                  {report.stockCode && `（${report.stockCode}）`}
+                </Badge>
+              )}
+              {report.industry && (
+                <Badge variant="default" size="sm">
+                  行业：{report.industry}
+                </Badge>
+              )}
+              {typeof report.targetPrice === "number" && (
+                <Badge variant="default" size="sm">
+                  目标价：¥{report.targetPrice.toFixed(2)}
+                </Badge>
+              )}
+              {report.impactLevel && (
+                <Badge
+                  variant={
+                    report.impactLevel === "high"
+                      ? "error"
+                      : report.impactLevel === "medium"
+                        ? "warning"
+                        : "success"
+                  }
+                  size="sm"
+                >
+                  影响力：{impactLevelText[report.impactLevel]}
+                </Badge>
+              )}
+            </div>
+          )}
+        </CardBody>
+      </Card>
+
+      {/* 研报摘要 */}
+      <Card>
+        <CardBody className="space-y-3">
+          <CardTitle>研报摘要</CardTitle>
+          <p className="leading-relaxed text-text-secondary">
+            {report.summary ?? "暂未提取摘要，可通过原文/PDF 查看详细内容。"}
+          </p>
+        </CardBody>
+      </Card>
+
+      {/* 下载与原文 */}
+      <Card>
+        <CardBody className="space-y-3">
+          <CardTitle>获取原文</CardTitle>
+          <div className="flex flex-wrap gap-3">
+            {report.pdfUrl && (
+              <a href={report.pdfUrl} target="_blank" rel="noreferrer">
+                <Button variant="primary" size="sm">
+                  下载 PDF
+                </Button>
+              </a>
+            )}
+            <a href={report.sourceUrl} target="_blank" rel="noreferrer">
+              <Button variant="secondary" size="sm">
+                查看原文
+              </Button>
             </a>
-          )}
-          <a
-            href={report.sourceUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="text-slate-600 hover:underline"
-          >
-            查看原文
-          </a>
-        </div>
-      </section>
+          </div>
+        </CardBody>
+      </Card>
 
+      {/* 主题标签 */}
       {report.topicTags.length > 0 && (
-        <section className="rounded bg-white p-6 shadow">
-          <h2 className="text-lg font-semibold text-slate-900">主题标签</h2>
-          <ul className="mt-3 flex flex-wrap gap-2 text-sm text-slate-600">
-            {report.topicTags.map((tag) => (
-              <li key={tag} className="rounded-full border border-slate-200 px-3 py-1">
-                #{tag}
-              </li>
-            ))}
-          </ul>
-        </section>
+        <Card>
+          <CardBody className="space-y-3">
+            <CardTitle>主题标签</CardTitle>
+            <div className="flex flex-wrap gap-2">
+              {report.topicTags.map((tag) => (
+                <Badge key={tag} variant="default" size="md">
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+          </CardBody>
+        </Card>
       )}
     </article>
   );
