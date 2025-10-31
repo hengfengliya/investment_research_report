@@ -38,5 +38,4 @@ jobs:
       - name: Run full-year 2025 task
         run: |
           cd backend
-          bun run scripts/task-2025-full-year.ts
-
+          npm run task:2025
