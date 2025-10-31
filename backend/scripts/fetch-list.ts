@@ -77,17 +77,19 @@ const buildParams = (category: ReportCategory) => {
     endTime: formatDate(0),
     fields: "",
     qType: config.qType,
-  };
+  } as Record<string, unknown>;
 
   if (config.endpoint === "report/list") {
-    return {
-      ...common,
-      industryCode: "*",
-      industry: "*",
-      rating: "",
-      ratingChange: "",
-      code: "*",
-    };
+    // 注意：report/list 既用于 industry 也用于 stock，但两者可选参数不同。
+    // - industry：支持 industry/industryCode 等筛选；
+    // - stock：如需“全市场”结果，不要传 code 参数；传入 '*' 可能导致后端不返回数据。
+    if (category === "industry") {
+      common.industryCode = "*";
+      common.industry = "*";
+      common.rating = "";
+      common.ratingChange = "";
+    }
+    // 对于 stock，不附加 code/industry 参数，以免被当作精确筛选而返回空集
   }
 
   return common;
