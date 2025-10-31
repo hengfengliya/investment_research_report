@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { NavLink, Route, Routes } from "react-router-dom";
-import { Input } from "@components/ui";
+import SearchBar from "@components/SearchBar";
 import ReportListPage from "@pages/ReportList";
 import ReportDetailPage from "@pages/ReportDetail";
 import SidebarFilter from "@components/SidebarFilter";
@@ -101,50 +101,13 @@ const App = () => {
             </svg>
           </button>
 
-          {/* 搜索框 */}
-          <div className="flex-1 max-w-xl">
-            <div className="relative">
-              <Input
-                value={searchKeyword}
-                onChange={(e) => setSearchKeyword(e.target.value)}
-                placeholder="搜索研报..."
-                clearable={!!searchKeyword}
-                onClear={() => setSearchKeyword("")}
-                prefixIcon={
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                    />
-                  </svg>
-                }
-              />
-            </div>
-          </div>
-
-          {/* 类型筛选：平铺按钮 */}
-          <div className="flex-shrink-0 flex items-center gap-2">
-            {CATEGORY_OPTIONS.map((option) => (
-              <button
-                key={option.value}
-                onClick={() => setSearchCategory(option.value)}
-                className={`px-3 py-2 text-xs font-medium rounded transition-all ${
-                  searchCategory === option.value
-                    ? "bg-brand-500 text-white"
-                    : "bg-transparent border border-border-default text-text-secondary hover:border-brand-500 hover:text-brand-600"
-                }`}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
+          {/* 搜索框：集成类型选择按钮 */}
+          <SearchBar
+            searchKeyword={searchKeyword}
+            onSearchChange={setSearchKeyword}
+            searchCategory={searchCategory}
+            onCategoryChange={setSearchCategory}
+          />
         </div>
       </div>
 
