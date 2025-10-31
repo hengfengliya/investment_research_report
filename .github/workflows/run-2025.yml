@@ -1,0 +1,42 @@
+name: Run 2025 Full Year Sync
+
+on:
+  workflow_dispatch:
+
+jobs:
+  run-2025:
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Inject runtime env
+        shell: bash
+        run: |
+          echo "DATABASE_URL=${{ vars.DATABASE_URL || secrets.DATABASE_URL }}" >> $GITHUB_ENV
+          echo "SYNC_LOOKBACK_DAYS=2" >> $GITHUB_ENV
+          echo "SYNC_CONCURRENCY=${{ vars.SYNC_CONCURRENCY || 6 }}" >> $GITHUB_ENV
+          echo "SYNC_PAGE_SIZE=${{ vars.SYNC_PAGE_SIZE || 40 }}" >> $GITHUB_ENV
+
+      - name: Install backend deps
+        run: |
+          cd backend
+          npm install
+
+      - name: Generate Prisma client
+        run: |
+          cd backend
+          npx prisma generate --schema ../prisma/schema.prisma
+
+      - name: Run full-year 2025 task
+        run: |
+          cd backend
+          bun run scripts/task-2025-full-year.ts
+
