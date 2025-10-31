@@ -52,12 +52,12 @@ const ReportCard = ({ report, highlightKeyword, variant = "list" }: ReportCardPr
     low: "低",
   };
 
-  // 网格变体：精简信息展示（方案 A）
+  // 网格变体：精简信息展示 + 极简黑白主题
   if (variant === "grid") {
     return (
-      <article className="flex flex-col h-full rounded-md border border-border-default bg-bg-secondary shadow-sm transition-all duration-fast hover:shadow-md hover:-translate-y-0.5 overflow-hidden group">
+      <article className="flex flex-col h-full rounded-sm border border-border-default bg-bg-secondary shadow-sm transition-all duration-300 hover:shadow-lg hover:-translate-y-1 overflow-hidden group">
         {/* 头部：分类 + 评级标签 */}
-        <div className="px-4 pt-3 pb-2 flex items-center gap-2 flex-wrap">
+        <div className="px-4 pt-4 pb-2 flex items-center gap-2 flex-wrap">
           {report.category && (
             <Badge variant="default" size="sm">
               {report.category === "strategy" && "策略"}
@@ -74,12 +74,12 @@ const ReportCard = ({ report, highlightKeyword, variant = "list" }: ReportCardPr
         </div>
 
         {/* 内容区 */}
-        <div className="px-4 py-2 flex-1 flex flex-col space-y-3">
+        <div className="px-4 py-3 flex-1 flex flex-col space-y-3">
           {/* 标题：2 行裁切，权重突出 */}
           <h3 className="text-sm font-semibold text-text-primary line-clamp-2 leading-snug">
             <Link
               to={`/reports/${report.id}`}
-              className="hover:text-brand-600 transition-colors"
+              className="hover:text-brand-500 transition-colors"
             >
               {highlight(report.title, highlightKeyword)}
             </Link>
@@ -101,9 +101,9 @@ const ReportCard = ({ report, highlightKeyword, variant = "list" }: ReportCardPr
         </div>
 
         {/* 底部：操作区 */}
-        <div className="px-4 py-3 border-t border-border-default bg-bg-primary">
+        <div className="px-4 py-3 border-t border-border-default bg-white hover:bg-brand-50 transition-colors">
           <Link to={`/reports/${report.id}`}>
-            <button className="w-full text-center text-xs font-medium text-brand-600 hover:text-brand-700 transition-colors group-hover:opacity-100 opacity-90">
+            <button className="w-full text-center text-xs font-medium text-brand-500 hover:text-brand-600 transition-colors">
               查看详情 →
             </button>
           </Link>

@@ -12,15 +12,6 @@ const DEFAULT_FILTERS: ReportFilter = {
   sort: "date",
 };
 
-// 分类标签选项
-const CATEGORY_TABS = [
-  { value: "all" as const, label: "全部" },
-  { value: "industry" as const, label: "行业" },
-  { value: "stock" as const, label: "公司" },
-  { value: "strategy" as const, label: "策略" },
-  { value: "macro" as const, label: "宏观" },
-];
-
 interface ReportListPageProps {
   searchKeyword?: string;
   searchCategory?: ReportCategory | "all";
@@ -29,11 +20,10 @@ interface ReportListPageProps {
 }
 
 /**
- * ReportListPage：研报列表页面（Behance 风格）
- * - 顶部：分类标签切换（全部、行业、公司、策略、宏观）
- * - 结果统计行：显示 "10,000+ 个结果 关于 'xxx'"
- * - 网格布局：1 列（手机）→ 2 列（平板）→ 4 列（桌面）- 响应式
- * - 左侧筛选打开时，卡片自动缩小；关闭时扩大
+ * ReportListPage：研报列表页面（1:1 Behance 风格）
+ * - 第三行区域：结果统计行（10,000+ 个结果 关于 "query"）
+ * - 第四行区域：卡片列表（响应式网格）
+ * - 左侧筛选打开时卡片自动缩小；关闭时扩大
  */
 const ReportListPage = ({
   searchKeyword = "",
@@ -80,11 +70,6 @@ const ReportListPage = ({
       .finally(() => setLoading(false));
   }, [mergedFilters]);
 
-  // 处理分类标签切换（顶部标签栏）
-  const handleCategoryChange = (category: ReportCategory | "all") => {
-    setMergedFilters((prev) => ({ ...prev, category, page: 1 }));
-  };
-
   // 处理分页
   const handlePageChange = (page: number) => {
     setMergedFilters((prev) => ({ ...prev, page }));
@@ -97,51 +82,27 @@ const ReportListPage = ({
   const currentKeyword = searchKeyword ?? "";
 
   // 根据筛选状态动态调整网格列数
-  // 筛选打开时：缩小卡片（3 列）; 筛选关闭时：扩大卡片（4 列）
+  // 筛选打开时：减少列数（卡片缩小）; 筛选关闭时：增加列数（卡片扩大）
   const gridColsClass = sidebarOpen
-    ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
-    : "grid-cols-1 md:grid-cols-2 lg:grid-cols-4";
+    ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+    : "grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5";
 
   return (
-    <div className="w-full flex flex-col">
-      {/* 分类标签区（Behance 风格） */}
-      <div className="sticky top-16 z-20 bg-white border-b border-border-default">
-        <div className="px-6 py-4">
-          <div className="flex items-center gap-2 overflow-x-auto pb-2">
-            {CATEGORY_TABS.map((tab) => (
-              <button
-                key={tab.value}
-                onClick={() => handleCategoryChange(tab.value)}
-                className={`whitespace-nowrap px-4 py-2 text-sm font-medium rounded-full transition-all ${
-                  mergedFilters.category === tab.value
-                    ? "bg-brand-600 text-white"
-                    : "bg-transparent border border-border-default text-text-secondary hover:border-text-secondary hover:text-text-primary"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
+    <div className="w-full flex flex-col bg-bg-primary min-h-screen">
+      {/* 结果统计行 */}
+      {hasData || (loading && listData?.total) ? (
+        <div className="px-8 pt-8 pb-4">
+          <h2 className="text-lg font-semibold text-text-primary">
+            <span className="text-brand-500">{totalResults.toLocaleString()}+</span>
+            <span className="text-text-secondary font-normal">
+              {" "}个结果{currentKeyword && ` 关于 "${currentKeyword}"`}
+            </span>
+          </h2>
         </div>
-      </div>
+      ) : null}
 
       {/* 主内容区 */}
-      <div className="px-6 py-8 flex-1">
-        {/* 结果统计行 */}
-        {hasData || (loading && listData?.total) ? (
-          <div className="mb-6">
-            <p className="text-sm text-text-secondary">
-              <span className="font-semibold text-text-primary">
-                {totalResults.toLocaleString()}+
-              </span>
-              {" "}个结果{currentKeyword && ` 关于 "${currentKeyword}"`}
-            </p>
-            <p className="text-xs text-text-tertiary mt-1">
-              第 {mergedFilters.page} 页，共 {listData?.totalPages ?? 0} 页
-            </p>
-          </div>
-        ) : null}
-
+      <div className="px-8 pb-8 flex-1">
         {/* 加载状态：显示骨架屏 */}
         {loading && (
           <div className="space-y-4">
@@ -161,9 +122,9 @@ const ReportListPage = ({
           />
         )}
 
-        {/* 网格布局：响应式 - 筛选打开时 3 列，关闭时 4 列 */}
+        {/* 卡片网格：响应式布局 */}
         {hasData && !loading && (
-          <div className={`grid ${gridColsClass} gap-6 transition-all duration-fast`}>
+          <div className={`grid ${gridColsClass} gap-6 transition-all duration-300`}>
             {listData?.items.map((report) => (
               <ReportCard
                 key={report.id}

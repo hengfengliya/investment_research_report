@@ -11,9 +11,9 @@ interface SidebarFilterProps {
 }
 
 /**
- * SidebarFilter：左侧筛选抽屉（Behance 启发）
- * 点击后展开左侧，显示筛选维度（收起状态）
- * 点击维度后展开详细的具体值
+ * SidebarFilter：左侧筛选抽屉（1:1 Behance 风格）
+ * 默认隐藏，点击筛选按钮后展开
+ * 点击维度标题后展开详细选项
  */
 const SidebarFilter = ({
   open,
@@ -59,32 +59,31 @@ const SidebarFilter = ({
     setExpandedDimension(expandedDimension === dimension ? null : dimension);
   };
 
+  // 默认隐藏，点击后展开
+  if (!open) {
+    return null;
+  }
+
   return (
     <>
-      {/* 移动端遮罩层 */}
-      {open && (
-        <div
-          className="fixed inset-0 z-30 bg-black/50 lg:hidden"
-          onClick={onClose}
-        />
-      )}
+      {/* 遮罩层 */}
+      <div
+        className="fixed inset-0 z-30 bg-black/20 backdrop-blur-sm"
+        onClick={onClose}
+      />
 
-      {/* 侧边栏抽屉 */}
-      <aside
-        className={`fixed inset-y-16 left-0 z-40 w-64 bg-white border-r border-border-default overflow-y-auto transition-transform duration-fast lg:relative lg:inset-auto lg:translate-x-0 ${
-          open ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
-        }`}
-      >
-        <div className="p-6 space-y-4">
-          {/* 关闭按钮（仅移动版） */}
-          <div className="flex items-center justify-between lg:hidden mb-6">
-            <h3 className="text-lg font-semibold text-text-primary">筛选</h3>
+      {/* 侧边栏抽屉：深灰色背景，Behance 风格 */}
+      <aside className="fixed inset-y-[120px] left-0 z-40 w-72 bg-slate-900 border-r border-slate-700 overflow-y-auto">
+        <div className="p-6 space-y-6">
+          {/* 关闭按钮 */}
+          <div className="flex items-center justify-between">
+            <h3 className="text-base font-semibold text-white">筛选</h3>
             <button
               onClick={onClose}
-              className="p-1 hover:bg-slate-100 rounded transition-colors"
+              className="p-1 hover:bg-slate-800 rounded transition-colors"
             >
               <svg
-                className="w-6 h-6 text-text-secondary"
+                className="w-5 h-5 text-white"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -103,13 +102,13 @@ const SidebarFilter = ({
           <div>
             <button
               onClick={() => toggleDimension("category")}
-              className="w-full flex items-center justify-between py-3 px-3 rounded hover:bg-brand-50 transition-colors group"
+              className="w-full flex items-center justify-between py-2 px-0 hover:opacity-80 transition-opacity group"
             >
-              <span className="text-sm font-medium text-text-primary group-hover:text-brand-600">
+              <span className="text-sm font-medium text-white">
                 报告类型
               </span>
               <svg
-                className={`w-4 h-4 text-text-tertiary transition-transform ${
+                className={`w-4 h-4 text-brand-500 transition-transform ${
                   expandedDimension === "category" ? "rotate-180" : ""
                 }`}
                 fill="none"
@@ -127,7 +126,7 @@ const SidebarFilter = ({
 
             {/* 展开详细选项 */}
             {expandedDimension === "category" && (
-              <div className="pl-3 space-y-2 mb-2">
+              <div className="pl-0 space-y-2 mt-3">
                 {[
                   { value: "all", label: "全部" },
                   { value: "strategy", label: "策略" },
@@ -150,9 +149,9 @@ const SidebarFilter = ({
                           e.target.value as ReportCategory | "all"
                         )
                       }
-                      className="w-4 h-4 text-brand-600 cursor-pointer"
+                      className="w-4 h-4 text-brand-500 cursor-pointer"
                     />
-                    <span className="text-sm text-text-secondary">
+                    <span className="text-sm text-slate-300">
                       {option.label}
                     </span>
                   </label>
@@ -162,16 +161,16 @@ const SidebarFilter = ({
           </div>
 
           {/* 筛选维度 2：排序方式 */}
-          <div className="border-t border-border-default pt-4">
+          <div className="border-t border-slate-700 pt-4">
             <button
               onClick={() => toggleDimension("sort")}
-              className="w-full flex items-center justify-between py-3 px-3 rounded hover:bg-brand-50 transition-colors group"
+              className="w-full flex items-center justify-between py-2 px-0 hover:opacity-80 transition-opacity"
             >
-              <span className="text-sm font-medium text-text-primary group-hover:text-brand-600">
+              <span className="text-sm font-medium text-white">
                 排序方式
               </span>
               <svg
-                className={`w-4 h-4 text-text-tertiary transition-transform ${
+                className={`w-4 h-4 text-brand-500 transition-transform ${
                   expandedDimension === "sort" ? "rotate-180" : ""
                 }`}
                 fill="none"
@@ -189,7 +188,7 @@ const SidebarFilter = ({
 
             {/* 展开详细选项 */}
             {expandedDimension === "sort" && (
-              <div className="pl-3 space-y-2 mb-2">
+              <div className="pl-0 space-y-2 mt-3">
                 {[
                   { value: "date", label: "最新发布" },
                   { value: "hot", label: "热度排序" },
@@ -209,9 +208,9 @@ const SidebarFilter = ({
                           e.target.value as "date" | "hot"
                         )
                       }
-                      className="w-4 h-4 text-brand-600 cursor-pointer"
+                      className="w-4 h-4 text-brand-500 cursor-pointer"
                     />
-                    <span className="text-sm text-text-secondary">
+                    <span className="text-sm text-slate-300">
                       {option.label}
                     </span>
                   </label>
@@ -221,16 +220,16 @@ const SidebarFilter = ({
           </div>
 
           {/* 筛选维度 3：每页显示 */}
-          <div className="border-t border-border-default pt-4">
+          <div className="border-t border-slate-700 pt-4">
             <button
               onClick={() => toggleDimension("pageSize")}
-              className="w-full flex items-center justify-between py-3 px-3 rounded hover:bg-brand-50 transition-colors group"
+              className="w-full flex items-center justify-between py-2 px-0 hover:opacity-80 transition-opacity"
             >
-              <span className="text-sm font-medium text-text-primary group-hover:text-brand-600">
+              <span className="text-sm font-medium text-white">
                 每页显示
               </span>
               <svg
-                className={`w-4 h-4 text-text-tertiary transition-transform ${
+                className={`w-4 h-4 text-brand-500 transition-transform ${
                   expandedDimension === "pageSize" ? "rotate-180" : ""
                 }`}
                 fill="none"
@@ -248,7 +247,7 @@ const SidebarFilter = ({
 
             {/* 展开详细选项 */}
             {expandedDimension === "pageSize" && (
-              <div className="pl-3 space-y-2 mb-2">
+              <div className="pl-0 space-y-2 mt-3">
                 {[10, 20, 50].map((size) => (
                   <label
                     key={size}
@@ -262,9 +261,9 @@ const SidebarFilter = ({
                       onChange={(e) =>
                         handleFilterChange("pageSize", parseInt(e.target.value, 10))
                       }
-                      className="w-4 h-4 text-brand-600 cursor-pointer"
+                      className="w-4 h-4 text-brand-500 cursor-pointer"
                     />
-                    <span className="text-sm text-text-secondary">
+                    <span className="text-sm text-slate-300">
                       {size} 项
                     </span>
                   </label>
@@ -276,7 +275,7 @@ const SidebarFilter = ({
           {/* 重置按钮 */}
           <button
             onClick={handleReset}
-            className="w-full py-2 px-4 text-sm font-medium text-text-primary border border-border-default rounded hover:bg-brand-50 transition-colors mt-6"
+            className="w-full py-2 px-4 text-sm font-medium text-white border border-brand-500 rounded hover:bg-brand-500 transition-all mt-6"
           >
             重置筛选
           </button>

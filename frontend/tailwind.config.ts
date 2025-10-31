@@ -9,31 +9,32 @@ export default {
   content: ["./index.html", "./src/**/*.{ts,tsx}"],
   theme: {
     extend: {
-      // 颜色体系：黑/白/暗金色
+      // 颜色体系：极简黑白 + 暗金强调色
       colors: {
-        // 品牌暗金色：主要用于主按钮、强调、焦点环
+        // 品牌暗金色：#D4AF37 作为强调色
         brand: {
-          50: "#FBF8F3",
-          100: "#F5EFE7",
-          400: "#B8860B", // 浅金色
-          500: "#8B6914", // 主色（暗金）
-          600: "#6B5410", // Hover
-          700: "#4A3A0A", // Active
+          50: "#FDF8F0",
+          100: "#F9F1E3",
+          500: "#D4AF37", // 主色（暗金）
+          600: "#C4A030", // Hover
+          700: "#B49225", // Active
         },
-        // 背景色
+        // 背景色：极简黑白
         bg: {
-          primary: "#FAFAFA", // 页面背景
-          secondary: "#FFFFFF", // 卡片背景
+          primary: "#FFFFFF", // 页面背景（白）
+          secondary: "#F8F8F8", // 卡片背景（极浅灰）
+          tertiary: "#000000", // 深色背景（黑）
         },
         // 分隔线与边框
         border: {
-          default: "#EAECF0",
+          default: "#E0E0E0", // 浅灰边框
+          dark: "#333333", // 深灰边框
         },
         // 文本颜色
         text: {
-          primary: "#101828", // 主文本
-          secondary: "#475467", // 次文本
-          tertiary: "#98A2B3", // 弱文本
+          primary: "#000000", // 主文本（黑）
+          secondary: "#666666", // 次文本（深灰）
+          tertiary: "#999999", // 弱文本（中灰）
         },
         // 链接色（与品牌橙并存）
         link: {
