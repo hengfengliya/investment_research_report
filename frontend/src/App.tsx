@@ -47,7 +47,7 @@ const App = () => {
             {/* Logo */}
             <NavLink
               to="/"
-              className="text-2xl font-bold text-text-primary hover:text-brand-500 transition-colors"
+              className="text-base font-semibold text-text-primary hover:text-brand-500 transition-colors"
             >
               有物投研
             </NavLink>
@@ -57,7 +57,7 @@ const App = () => {
               to="/"
               end
               className={({ isActive }) =>
-                `text-sm transition-colors ${
+                `text-xs transition-colors ${
                   isActive
                     ? "text-text-primary font-medium"
                     : "text-text-tertiary hover:text-text-secondary"
