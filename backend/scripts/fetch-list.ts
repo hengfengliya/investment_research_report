@@ -170,3 +170,55 @@ export const fetchCategoryList = async <T extends Record<string, unknown>>(
 
   return allResults;
 };
+
+/**
+ * 在指定日期范围内抓取某分类的报告列表（闭区间）。
+ * beginDate、endDate 为 yyyy-mm-dd 字符串。
+ */
+export const fetchCategoryListInRange = async <T extends Record<string, unknown>>(
+  category: ReportCategory,
+  beginDate: string,
+  endDate: string,
+) => {
+  const config = CATEGORY_CONFIGS[category];
+  const allResults: T[] = [];
+  let pageNo = 1;
+  let shouldContinue = true;
+
+  while (shouldContinue) {
+    const params = buildParams(category);
+    (params as any).pageNo = pageNo;
+    (params as any).beginTime = beginDate;
+    (params as any).endTime = endDate;
+
+    const response = await withRetry(() => http.get<string>(config.endpoint, {
+      params,
+      headers: {
+        Referer: config.referer,
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36",
+      },
+      responseType: "text",
+    }));
+
+    type ApiResponse = { data: T[]; hits: number };
+    const parsed = parseJsonp<ApiResponse>(response.data);
+    const currentPageData = parsed.data ?? [];
+    if (!currentPageData.length) {
+      shouldContinue = false;
+      break;
+    }
+
+    allResults.push(...currentPageData);
+
+    const oldestDate = getOldestDate(currentPageData);
+    if (oldestDate && oldestDate < beginDate) {
+      shouldContinue = false;
+      break;
+    }
+
+    pageNo += 1;
+  }
+
+  return allResults;
+};
