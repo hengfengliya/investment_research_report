@@ -15,6 +15,12 @@ on:
 jobs:
   sync:
     runs-on: ubuntu-latest
+    env:
+      # 从仓库 Secrets 提供数据库连接，供所有步骤可见
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      # 爬虫默认参数（如需覆盖可在 workflow_dispatch 时传入 inputs 或修改此处）
+      SYNC_LOOKBACK_DAYS: 2
+      SYNC_CONCURRENCY: 8
 
     steps:
       # Step 1: 检出代码
@@ -44,11 +50,6 @@ jobs:
         run: |
           cd backend
           bun run scripts/sync-runner.ts
-        env:
-          # 从 GitHub Secrets 读取敏感信息
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          SYNC_LOOKBACK_DAYS: 2
-          SYNC_CONCURRENCY: 8
 
       # Step 6: 如果失败，发送通知（可选）
       - name: Notify on failure
