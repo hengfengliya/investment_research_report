@@ -23,53 +23,71 @@ const CATEGORY_TABS = [
 
 interface ReportListPageProps {
   searchKeyword?: string;
+  searchCategory?: ReportCategory | "all";
+  appliedFilters?: ReportFilter;
+  sidebarOpen?: boolean;
 }
 
 /**
  * ReportListPage：研报列表页面（Behance 风格）
  * - 顶部：分类标签切换（全部、行业、公司、策略、宏观）
  * - 结果统计行：显示 "10,000+ 个结果 关于 'xxx'"
- * - 网格布局：4 列（响应式）
- * - 左侧筛选已在 App.tsx 中处理
+ * - 网格布局：1 列（手机）→ 2 列（平板）→ 4 列（桌面）- 响应式
+ * - 左侧筛选打开时，卡片自动缩小；关闭时扩大
  */
-const ReportListPage = ({ searchKeyword = "" }: ReportListPageProps) => {
-  const [appliedFilters, setAppliedFilters] = useState<ReportFilter>(DEFAULT_FILTERS);
+const ReportListPage = ({
+  searchKeyword = "",
+  searchCategory = "all",
+  appliedFilters: propsFilters,
+  sidebarOpen = false,
+}: ReportListPageProps) => {
   const [listData, setListData] = useState<ReportListResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // 监听搜索关键词从顶部导航传入，更新筛选条件
+  // 使用父组件传来的 appliedFilters，否则使用默认值
+  const [mergedFilters, setMergedFilters] = useState<ReportFilter>(
+    propsFilters || DEFAULT_FILTERS
+  );
+
+  // 监听来自父组件的筛选变化
   useEffect(() => {
-    if (searchKeyword !== (appliedFilters.keyword ?? "")) {
-      setAppliedFilters((prev) => ({
-        ...prev,
-        keyword: searchKeyword || undefined,
-        page: 1,
-      }));
+    if (propsFilters) {
+      setMergedFilters(propsFilters);
     }
-  }, [searchKeyword]);
+  }, [propsFilters]);
+
+  // 监听搜索关键词和搜索类型，合并更新筛选
+  useEffect(() => {
+    setMergedFilters((prev) => ({
+      ...prev,
+      keyword: searchKeyword || undefined,
+      category: searchCategory,
+      page: 1,
+    }));
+  }, [searchKeyword, searchCategory]);
 
   // 当筛选条件变化时，请求列表数据
   useEffect(() => {
     setLoading(true);
     setError(null);
 
-    getReports(appliedFilters)
+    getReports(mergedFilters)
       .then(setListData)
       .catch((err) => {
         setError(err instanceof Error ? err.message : "加载失败，请稍后重试");
       })
       .finally(() => setLoading(false));
-  }, [appliedFilters]);
+  }, [mergedFilters]);
 
-  // 处理分类标签切换
+  // 处理分类标签切换（顶部标签栏）
   const handleCategoryChange = (category: ReportCategory | "all") => {
-    setAppliedFilters((prev) => ({ ...prev, category, page: 1 }));
+    setMergedFilters((prev) => ({ ...prev, category, page: 1 }));
   };
 
   // 处理分页
   const handlePageChange = (page: number) => {
-    setAppliedFilters((prev) => ({ ...prev, page }));
+    setMergedFilters((prev) => ({ ...prev, page }));
     // 切换页码后平滑滚动到顶部
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -77,6 +95,12 @@ const ReportListPage = ({ searchKeyword = "" }: ReportListPageProps) => {
   const hasData = (listData?.items?.length ?? 0) > 0;
   const totalResults = listData?.total ?? 0;
   const currentKeyword = searchKeyword ?? "";
+
+  // 根据筛选状态动态调整网格列数
+  // 筛选打开时：缩小卡片（3 列）; 筛选关闭时：扩大卡片（4 列）
+  const gridColsClass = sidebarOpen
+    ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+    : "grid-cols-1 md:grid-cols-2 lg:grid-cols-4";
 
   return (
     <div className="w-full flex flex-col">
@@ -89,8 +113,8 @@ const ReportListPage = ({ searchKeyword = "" }: ReportListPageProps) => {
                 key={tab.value}
                 onClick={() => handleCategoryChange(tab.value)}
                 className={`whitespace-nowrap px-4 py-2 text-sm font-medium rounded-full transition-all ${
-                  appliedFilters.category === tab.value
-                    ? "bg-text-primary text-white"
+                  mergedFilters.category === tab.value
+                    ? "bg-brand-600 text-white"
                     : "bg-transparent border border-border-default text-text-secondary hover:border-text-secondary hover:text-text-primary"
                 }`}
               >
@@ -113,7 +137,7 @@ const ReportListPage = ({ searchKeyword = "" }: ReportListPageProps) => {
               {" "}个结果{currentKeyword && ` 关于 "${currentKeyword}"`}
             </p>
             <p className="text-xs text-text-tertiary mt-1">
-              第 {appliedFilters.page} 页，共 {listData?.totalPages ?? 0} 页
+              第 {mergedFilters.page} 页，共 {listData?.totalPages ?? 0} 页
             </p>
           </div>
         ) : null}
@@ -132,14 +156,14 @@ const ReportListPage = ({ searchKeyword = "" }: ReportListPageProps) => {
             message={error}
             action={{
               label: "重试",
-              onClick: () => setAppliedFilters({ ...appliedFilters }),
+              onClick: () => setMergedFilters({ ...mergedFilters }),
             }}
           />
         )}
 
-        {/* 网格布局：Behance 风格（4 列响应式） */}
+        {/* 网格布局：响应式 - 筛选打开时 3 列，关闭时 4 列 */}
         {hasData && !loading && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className={`grid ${gridColsClass} gap-6 transition-all duration-fast`}>
             {listData?.items.map((report) => (
               <ReportCard
                 key={report.id}
@@ -159,7 +183,7 @@ const ReportListPage = ({ searchKeyword = "" }: ReportListPageProps) => {
             action={{
               label: "清除筛选",
               onClick: () => {
-                setAppliedFilters(DEFAULT_FILTERS);
+                setMergedFilters(DEFAULT_FILTERS);
               },
             }}
           />
@@ -172,7 +196,7 @@ const ReportListPage = ({ searchKeyword = "" }: ReportListPageProps) => {
               page={listData.page}
               totalPages={listData.totalPages}
               onChange={handlePageChange}
-              pageSize={appliedFilters.pageSize}
+              pageSize={mergedFilters.pageSize}
             />
           </div>
         )}
