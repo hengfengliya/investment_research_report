@@ -1,4 +1,4 @@
-# Node / Bun 依赖目录
+﻿# Node / Bun 依赖目录
 backend/node_modules/
 frontend/node_modules/
 node_modules/
@@ -10,6 +10,7 @@ backend/dist/
 # 环境与临时文件
 .env
 .env.*
+!.env.example
 *.log
 tmp-*.*
 
