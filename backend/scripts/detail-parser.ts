@@ -111,14 +111,28 @@ export const fetchDetailInfo = async (
     };
   }
 
-  const response = await axios.get<string>(url, {
+  const doFetch = () => axios.get<string>(url, {
     headers: {
       Referer: CATEGORY_CONFIGS[category].referer,
       "User-Agent":
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36",
+      "Accept-Encoding": "identity",
     },
     responseType: "text",
   });
+  let response: { data: string };
+  try {
+    response = await doFetch();
+  } catch (e) {
+    // 简单重试两次，缓解偶发网络/压缩错误
+    await new Promise((r) => setTimeout(r, 300));
+    try {
+      response = await doFetch();
+    } catch {
+      await new Promise((r) => setTimeout(r, 700));
+      response = await doFetch();
+    }
+  }
 
   const html = response.data;
   const $ = cheerio.load(html);

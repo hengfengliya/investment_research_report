@@ -98,7 +98,24 @@ const buildParams = (category: ReportCategory) => {
 const http = axios.create({
   baseURL: API_BASE,
   timeout: 15000,
+  // 关闭压缩，避免部分环境下 br/gzip 解压偶发 zlib 错误
+  headers: { "Accept-Encoding": "identity" },
 });
+
+// 简易重试封装：处理网络抖动或被限流导致的瞬时错误
+const withRetry = async <R>(fn: () => Promise<R>, attempts = 3, baseDelay = 400): Promise<R> => {
+  let last: unknown;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fn();
+    } catch (e) {
+      last = e;
+      const sleep = baseDelay * Math.pow(2, i) + Math.floor(Math.random() * 120);
+      await new Promise((r) => setTimeout(r, sleep));
+    }
+  }
+  throw last;
+};
 
 /**
  * 拉取指定分类的研报列表数据，支持自动翻页直到时间范围外。
@@ -118,7 +135,7 @@ export const fetchCategoryList = async <T extends Record<string, unknown>>(
     const params = buildParams(category);
     params.pageNo = pageNo;
 
-    const response = await http.get<string>(config.endpoint, {
+    const response = await withRetry(() => http.get<string>(config.endpoint, {
       params,
       headers: {
         Referer: config.referer,
@@ -126,7 +143,7 @@ export const fetchCategoryList = async <T extends Record<string, unknown>>(
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36",
       },
       responseType: "text",
-    });
+    }));
 
     type ApiResponse = { data: T[]; hits: number };
     const parsed = parseJsonp<ApiResponse>(response.data);
