@@ -15,12 +15,14 @@ on:
 jobs:
   sync:
     runs-on: ubuntu-latest
+    # 使用环境级变量（Environment variables）。若你的环境名不同，请改为对应名称。
+    environment:
+      name: production
     env:
-      # 从仓库 Secrets 提供数据库连接，供所有步骤可见
-      DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      # 爬虫默认参数（如需覆盖可在 workflow_dispatch 时传入 inputs 或修改此处）
-      SYNC_LOOKBACK_DAYS: 2
-      SYNC_CONCURRENCY: 8
+      # 优先从环境级 variables 读取；如需改回仓库 Secrets，可将 vars.* 替换为 secrets.*
+      DATABASE_URL: ${{ vars.DATABASE_URL }}
+      SYNC_LOOKBACK_DAYS: ${{ vars.SYNC_LOOKBACK_DAYS || 2 }}
+      SYNC_CONCURRENCY: ${{ vars.SYNC_CONCURRENCY || 8 }}
 
     steps:
       # Step 1: 检出代码
