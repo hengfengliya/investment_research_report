@@ -87,6 +87,18 @@ const ReportListPage = ({
     ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
     : "grid-cols-1 md:grid-cols-2 lg:grid-cols-4";
 
+  // 获取完整的类型名称
+  const getCategoryFullName = (category: ReportCategory | "all") => {
+    const categoryMap = {
+      all: "全部研报",
+      strategy: "策略研究",
+      macro: "宏观研究",
+      industry: "行业研究",
+      stock: "公司研究",
+    };
+    return categoryMap[category];
+  };
+
   return (
     <div className="w-full flex flex-col bg-bg-primary min-h-screen">
       {/* 结果统计行 */}
@@ -95,7 +107,8 @@ const ReportListPage = ({
           <h2 className="text-lg font-semibold text-text-primary">
             <span className="text-brand-500">{totalResults.toLocaleString()}+</span>
             <span className="text-text-secondary font-normal">
-              {" "}个结果{currentKeyword && ` 关于 "${currentKeyword}"`}
+              {" "}个{getCategoryFullName(searchCategory)}
+              {currentKeyword && ` 关于 "${currentKeyword}"`}
             </span>
           </h2>
         </div>

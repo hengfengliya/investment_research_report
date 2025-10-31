@@ -99,15 +99,6 @@ const ReportCard = ({ report, highlightKeyword, variant = "list" }: ReportCardPr
             <span className="line-clamp-1">{report.org ?? "未知机构"}</span>
           </div>
         </div>
-
-        {/* 底部：操作区 */}
-        <div className="px-4 py-3 border-t border-border-default bg-white hover:bg-brand-50 transition-colors">
-          <Link to={`/reports/${report.id}`}>
-            <button className="w-full text-center text-xs font-medium text-brand-500 hover:text-brand-600 transition-colors">
-              查看详情 →
-            </button>
-          </Link>
-        </div>
       </article>
     );
   }
