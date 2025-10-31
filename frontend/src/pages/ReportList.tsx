@@ -87,7 +87,7 @@ const ReportListPage = () => {
   };
 
   const hasData = (listData?.items?.length ?? 0) > 0;
-  const totalResults = listData?.totalCount ?? 0;
+  const totalResults = listData?.total ?? 0;
   const currentKeyword = appliedFilters.keyword ?? "";
 
   return (
@@ -150,7 +150,7 @@ const ReportListPage = () => {
         )}
 
         {/* 结果统计行 */}
-        {hasData || (loading && listData?.totalCount) ? (
+        {hasData || (loading && listData?.total) ? (
           <div className="mb-6 flex items-center justify-between">
             <p className="text-sm text-text-secondary">
               <span className="font-semibold text-text-primary">
