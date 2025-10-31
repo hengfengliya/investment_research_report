@@ -59,6 +59,24 @@ const ensureOrgName = (record: Record<string, unknown>) => {
   return org.trim() || "δ֪����";
 };
 /**
+ * 生成中国时区（Asia/Shanghai）的当前时间（RFC3339 字符串）
+ * 作用：确保“入库时间 createdAt”为中国区的年月日时分秒。
+ */
+const chinaNow = (): string => {
+  const now = new Date();
+  const utcEpoch = now.getTime() + now.getTimezoneOffset() * 60_000; // 换算为 UTC 时间戳（毫秒）
+  const shanghai = new Date(utcEpoch + 8 * 60 * 60 * 1000); // UTC+8 北京时间
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return (
+    `${shanghai.getUTCFullYear()}-` +
+    `${pad(shanghai.getUTCMonth() + 1)}-` +
+    `${pad(shanghai.getUTCDate())}T` +
+    `${pad(shanghai.getUTCHours())}:` +
+    `${pad(shanghai.getUTCMinutes())}:` +
+    `${pad(shanghai.getUTCSeconds())}.000Z`
+  );
+};
+/**
  * 规范化发布日期
  * 东方财富返回的格式：YYYY-MM-DD HH:MM:SS.mmm（如 2025-10-30 00:00:00.000）
  * 需要转换为当天的 UTC 午夜（如 2025-10-30T00:00:00Z）
@@ -178,7 +196,7 @@ const syncCategory = async (category: ReportCategory): Promise<CategorySummary> 
             summary.updated += 1;
           } else {
             // 不存在 → 新增
-            await prisma.report.create({ data: reportData });
+            await prisma.report.create({ data: { ...reportData, createdAt: chinaNow() } });
             summary.inserted += 1;
           }
         } catch (error) {
@@ -223,5 +241,3 @@ if (isDirectRun) {
       process.exit(1);
     });
 }
-
-

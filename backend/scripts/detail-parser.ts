@@ -132,7 +132,21 @@ export const fetchDetailInfo = async (
 
   const summarySource = (zwinfo?.notice_content as string | undefined) ?? "";
   // 抓取完整的摘要内容，去除多余空白符
-  const summary = summarySource.replace(/\s+/g, " ").trim();
+  let summary = summarySource.replace(/\s+/g, " ").trim();
+  
+  // 摘要兜底逻辑：当 notice_content 缺失时，从 meta 或正文提取
+  if (!summary) {
+    const metaDesc = $('meta[name="description"]').attr('content') ?? '';
+    summary = metaDesc.replace(/\s+/g, ' ').trim();
+  }
+  if (!summary) {
+    const paragraphs = $('#zw_body p, .report-content p, .article-content p, .content p')
+      .map((_, el) => $(el).text().replace(/\s+/g, ' ').trim())
+      .get()
+      .filter(Boolean)
+      .slice(0, 2);
+    summary = paragraphs.join(' ').trim();
+  }
 
   const pdfUrlRaw = (zwinfo?.attach_url as string | undefined) ?? null;
   const pdfUrl = pdfUrlRaw ? pdfUrlRaw.split("?")[0] : null;
