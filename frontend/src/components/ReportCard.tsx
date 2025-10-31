@@ -52,12 +52,12 @@ const ReportCard = ({ report, highlightKeyword, variant = "list" }: ReportCardPr
     low: "低",
   };
 
-  // 网格变体：更紧凑的卡片设计
+  // 网格变体：精简信息展示（方案 A）
   if (variant === "grid") {
     return (
-      <article className="flex flex-col h-full rounded-lg border border-border-default bg-bg-secondary shadow-sm transition-all duration-fast hover:shadow-lg hover:-translate-y-1 overflow-hidden">
-        {/* 头部：分类标签 */}
-        <div className="px-4 pt-4 pb-2">
+      <article className="flex flex-col h-full rounded-md border border-border-default bg-bg-secondary shadow-sm transition-all duration-fast hover:shadow-md hover:-translate-y-0.5 overflow-hidden group">
+        {/* 头部：分类 + 评级标签 */}
+        <div className="px-4 pt-3 pb-2 flex items-center gap-2 flex-wrap">
           {report.category && (
             <Badge variant="default" size="sm">
               {report.category === "strategy" && "策略"}
@@ -66,12 +66,17 @@ const ReportCard = ({ report, highlightKeyword, variant = "list" }: ReportCardPr
               {report.category === "stock" && "公司"}
             </Badge>
           )}
+          {report.rating && (
+            <Badge variant="filled" size="sm">
+              {report.rating}
+            </Badge>
+          )}
         </div>
 
         {/* 内容区 */}
-        <div className="px-4 py-3 flex-1 flex flex-col space-y-2">
-          {/* 标题 */}
-          <h3 className="text-sm font-semibold text-text-primary line-clamp-3">
+        <div className="px-4 py-2 flex-1 flex flex-col space-y-3">
+          {/* 标题：2 行裁切，权重突出 */}
+          <h3 className="text-sm font-semibold text-text-primary line-clamp-2 leading-snug">
             <Link
               to={`/reports/${report.id}`}
               className="hover:text-brand-600 transition-colors"
@@ -80,41 +85,26 @@ const ReportCard = ({ report, highlightKeyword, variant = "list" }: ReportCardPr
             </Link>
           </h3>
 
-          {/* 元信息 */}
-          <div className="text-xs text-text-tertiary space-y-1">
-            <div>{formatDate(report.date)}</div>
-            <div className="line-clamp-1">{report.org ?? "未知机构"}</div>
-          </div>
-
-          {/* 摘要（可选） */}
+          {/* 摘要：核心内容，2 行展示 */}
           {report.summary && (
-            <p className="text-xs text-text-secondary line-clamp-2 flex-1">
+            <p className="text-xs text-text-secondary line-clamp-2 flex-1 leading-relaxed">
               {highlight(report.summary, highlightKeyword)}
             </p>
           )}
 
-          {/* 标签 */}
-          {(report.rating || report.stockName) && (
-            <div className="flex flex-wrap gap-1 pt-1">
-              {report.rating && (
-                <Badge variant="filled" size="sm">
-                  {report.rating}
-                </Badge>
-              )}
-              {report.stockName && (
-                <Badge variant="default" size="sm">
-                  {report.stockName.substring(0, 4)}
-                </Badge>
-              )}
-            </div>
-          )}
+          {/* 元信息：日期 · 机构（紧凑） */}
+          <div className="text-xs text-text-tertiary flex items-center gap-1 flex-wrap">
+            <span>{formatDate(report.date)}</span>
+            <span>·</span>
+            <span className="line-clamp-1">{report.org ?? "未知机构"}</span>
+          </div>
         </div>
 
-        {/* 底部操作 */}
-        <div className="px-4 py-3 border-t border-border-default bg-slate-50">
+        {/* 底部：操作区 */}
+        <div className="px-4 py-3 border-t border-border-default bg-bg-primary">
           <Link to={`/reports/${report.id}`}>
-            <button className="w-full text-center py-1 text-xs font-medium text-brand-600 hover:text-brand-700 transition-colors">
-              查看详情
+            <button className="w-full text-center text-xs font-medium text-brand-600 hover:text-brand-700 transition-colors group-hover:opacity-100 opacity-90">
+              查看详情 →
             </button>
           </Link>
         </div>
