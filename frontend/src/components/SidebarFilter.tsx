@@ -59,21 +59,10 @@ const SidebarFilter = ({
     setExpandedDimension(expandedDimension === dimension ? null : dimension);
   };
 
-  // 默认隐藏，点击后展开
-  if (!open) {
-    return null;
-  }
-
   return (
     <>
-      {/* 遮罩层 */}
-      <div
-        className="fixed inset-0 z-30 bg-black/20 backdrop-blur-sm"
-        onClick={onClose}
-      />
-
-      {/* 侧边栏抽屉：深灰色背景，Behance 风格 */}
-      <aside className="fixed inset-y-[120px] left-0 z-40 w-72 bg-slate-900 border-r border-slate-700 overflow-y-auto">
+      {/* 侧边栏：相对定位，推开右侧内容（非固定覆盖） */}
+      <aside className="w-72 bg-slate-900 border-r border-slate-700 overflow-y-auto flex-shrink-0 transition-all duration-300">
         <div className="p-6 space-y-6">
           {/* 关闭按钮 */}
           <div className="flex items-center justify-between">

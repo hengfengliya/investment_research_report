@@ -84,8 +84,8 @@ const ReportListPage = ({
   // 根据筛选状态动态调整网格列数
   // 筛选打开时：减少列数（卡片缩小）; 筛选关闭时：增加列数（卡片扩大）
   const gridColsClass = sidebarOpen
-    ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-    : "grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5";
+    ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+    : "grid-cols-1 md:grid-cols-2 lg:grid-cols-4";
 
   return (
     <div className="w-full flex flex-col bg-bg-primary min-h-screen">

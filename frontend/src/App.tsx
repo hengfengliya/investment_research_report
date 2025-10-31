@@ -149,16 +149,18 @@ const App = () => {
       </div>
 
       {/* ========== 第三行：内容区（侧边栏 + 卡片网格） ========== */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* 侧边栏筛选：默认隐藏 */}
-        <SidebarFilter
-          open={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
-          onFilterChange={handleSidebarFilterChange}
-        />
+      <div className="flex flex-1 overflow-hidden bg-bg-primary">
+        {/* 侧边栏筛选：推开右侧内容（非覆盖） */}
+        {sidebarOpen && (
+          <SidebarFilter
+            open={sidebarOpen}
+            onClose={() => setSidebarOpen(false)}
+            onFilterChange={handleSidebarFilterChange}
+          />
+        )}
 
-        {/* 主内容区 */}
-        <main className="flex-1 overflow-auto">
+        {/* 主内容区：平滑过渡 */}
+        <main className={`flex-1 overflow-auto transition-all duration-300 ${sidebarOpen ? "" : "w-full"}`}>
           <Routes>
             <Route
               path="/"
