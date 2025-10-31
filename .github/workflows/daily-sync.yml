@@ -57,3 +57,50 @@ jobs:
       - name: Notify on failure
         if: failure()
         run: echo "❌ 数据抓取失败，请检查日志"
+name: Daily Sync Research Reports
+
+on:
+  schedule:
+    - cron: '0 22 * * *'
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Inject runtime env
+        shell: bash
+        run: |
+          echo "DATABASE_URL=${{ vars.DATABASE_URL || secrets.DATABASE_URL }}" >> $GITHUB_ENV
+          echo "SYNC_LOOKBACK_DAYS=${{ vars.SYNC_LOOKBACK_DAYS || 2 }}" >> $GITHUB_ENV
+          echo "SYNC_CONCURRENCY=${{ vars.SYNC_CONCURRENCY || 8 }}" >> $GITHUB_ENV
+          echo "SYNC_PAGE_SIZE=${{ vars.SYNC_PAGE_SIZE || 40 }}" >> $GITHUB_ENV
+
+      - name: Install dependencies
+        run: |
+          cd backend
+          npm install
+
+      - name: Generate Prisma client
+        run: |
+          cd backend
+          npx prisma generate --schema ../prisma/schema.prisma
+
+      - name: Run sync script
+        run: |
+          cd backend
+          bun run scripts/sync-runner.ts
+
+      - name: Notify on failure
+        if: failure()
+        run: echo "数据抓取失败，请检查日志"
