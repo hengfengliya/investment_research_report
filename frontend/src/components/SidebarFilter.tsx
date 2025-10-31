@@ -61,18 +61,18 @@ const SidebarFilter = ({
 
   return (
     <>
-      {/* 侧边栏：相对定位，推开右侧内容（非固定覆盖） */}
-      <aside className="w-72 bg-slate-900 border-r border-slate-700 overflow-y-auto flex-shrink-0 transition-all duration-300">
+      {/* 侧边栏：相对定位，推开右侧内容（非固定覆盖）- 白色背景，极简设计 */}
+      <aside className="w-72 bg-white overflow-y-auto flex-shrink-0 transition-all duration-300">
         <div className="p-6 space-y-6">
           {/* 关闭按钮 */}
           <div className="flex items-center justify-between">
-            <h3 className="text-base font-semibold text-white">筛选</h3>
+            <h3 className="text-base font-semibold text-text-primary">筛选</h3>
             <button
               onClick={onClose}
-              className="p-1 hover:bg-slate-800 rounded transition-colors"
+              className="p-1 hover:bg-bg-secondary rounded transition-colors"
             >
               <svg
-                className="w-5 h-5 text-white"
+                className="w-5 h-5 text-text-primary"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -91,9 +91,9 @@ const SidebarFilter = ({
           <div>
             <button
               onClick={() => toggleDimension("category")}
-              className="w-full flex items-center justify-between py-2 px-0 hover:opacity-80 transition-opacity group"
+              className="w-full flex items-center justify-between py-2 px-0 hover:opacity-70 transition-opacity group"
             >
-              <span className="text-sm font-medium text-white">
+              <span className="text-sm font-medium text-text-primary">
                 报告类型
               </span>
               <svg
@@ -140,7 +140,7 @@ const SidebarFilter = ({
                       }
                       className="w-4 h-4 text-brand-500 cursor-pointer"
                     />
-                    <span className="text-sm text-slate-300">
+                    <span className="text-sm text-text-secondary">
                       {option.label}
                     </span>
                   </label>
@@ -150,12 +150,12 @@ const SidebarFilter = ({
           </div>
 
           {/* 筛选维度 2：排序方式 */}
-          <div className="border-t border-slate-700 pt-4">
+          <div className="pt-4">
             <button
               onClick={() => toggleDimension("sort")}
-              className="w-full flex items-center justify-between py-2 px-0 hover:opacity-80 transition-opacity"
+              className="w-full flex items-center justify-between py-2 px-0 hover:opacity-70 transition-opacity"
             >
-              <span className="text-sm font-medium text-white">
+              <span className="text-sm font-medium text-text-primary">
                 排序方式
               </span>
               <svg
@@ -199,7 +199,7 @@ const SidebarFilter = ({
                       }
                       className="w-4 h-4 text-brand-500 cursor-pointer"
                     />
-                    <span className="text-sm text-slate-300">
+                    <span className="text-sm text-text-secondary">
                       {option.label}
                     </span>
                   </label>
@@ -209,12 +209,12 @@ const SidebarFilter = ({
           </div>
 
           {/* 筛选维度 3：每页显示 */}
-          <div className="border-t border-slate-700 pt-4">
+          <div className="pt-4">
             <button
               onClick={() => toggleDimension("pageSize")}
-              className="w-full flex items-center justify-between py-2 px-0 hover:opacity-80 transition-opacity"
+              className="w-full flex items-center justify-between py-2 px-0 hover:opacity-70 transition-opacity"
             >
-              <span className="text-sm font-medium text-white">
+              <span className="text-sm font-medium text-text-primary">
                 每页显示
               </span>
               <svg
@@ -252,7 +252,7 @@ const SidebarFilter = ({
                       }
                       className="w-4 h-4 text-brand-500 cursor-pointer"
                     />
-                    <span className="text-sm text-slate-300">
+                    <span className="text-sm text-text-secondary">
                       {size} 项
                     </span>
                   </label>
@@ -264,7 +264,7 @@ const SidebarFilter = ({
           {/* 重置按钮 */}
           <button
             onClick={handleReset}
-            className="w-full py-2 px-4 text-sm font-medium text-white border border-brand-500 rounded hover:bg-brand-500 transition-all mt-6"
+            className="w-full py-2 px-4 text-sm font-medium text-brand-500 border border-brand-500 rounded hover:bg-brand-50 transition-all mt-6"
           >
             重置筛选
           </button>
