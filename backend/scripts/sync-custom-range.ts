@@ -149,13 +149,14 @@ const syncCategory = async (
       endDate,
     );
     summary.fetched = list.length;
+    console.log(`[${category}] ✓ 获取 ${list.length} 条数据`);
 
     if (list.length === 0) {
       console.log(`[${category}] 未找到数据`);
       return summary;
     }
 
-    console.log(`[${category}] 获取 ${list.length} 条数据，开始详情抓取...`);
+    console.log(`[${category}] 开始处理详情页和入库...`);
 
     // 构建唯一键列表用于批量查询
     const uniqueKeys = list.map((record) => ({
@@ -177,6 +178,8 @@ const syncCategory = async (
       },
       select: { id: true, title: true, date: true, org: true },
     });
+
+    console.log(`[${category}] 检查去重：数据库中已存在 ${existingRecords.length} 条记录`);
 
     // 在内存中构建 Map，快速查找
     const existingMap = new Map(
@@ -248,18 +251,21 @@ const syncCategory = async (
           } catch (error) {
             summary.errors += 1;
             const message = error instanceof Error ? error.message : String(error);
-            console.error(`[${category}] 同步单条记录失败：${message.substring(0, 100)}`);
+            if (process.env.DEBUG) {
+              console.error(`[${category}] 同步单条记录失败：${message.substring(0, 100)}`);
+            }
           }
         }),
       ),
     );
 
     console.log(
-      `[${category}] 完成 - 新增: ${summary.inserted}, 更新: ${summary.updated}, 错误: ${summary.errors}`,
+      `[${category}] ✓ 完成 - 新增: ${summary.inserted}, 更新: ${summary.updated}, 错误: ${summary.errors}`,
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    console.error(`[${category}] 抓取失败：${message}`);
+    console.error(`[${category}] ✗ 分类抓取失败：${message}`);
+    console.error((error as any).stack);
     summary.errors += 1;
   }
 
