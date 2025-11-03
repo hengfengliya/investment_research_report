@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 
 import pLimit from "p-limit";
-import { prisma } from "../lib/prisma.js";
+import { prisma, withRetry } from "../lib/prisma.js";
 import type { ReportCategory } from "./category-config.js";
 import { fetchCategoryListInRange } from "./fetch-list.js";
 import { fetchDetailInfo, resolveDetailUrl } from "./detail-parser.js";
@@ -179,19 +179,24 @@ const syncCategory = async (
       org: ensureOrgName(record),
     }));
 
-    // 一次性从数据库查询所有已存在的记录
-    const existingRecords = await prisma.report.findMany({
-      where: {
-        OR: uniqueKeys.map((key) => ({
-          AND: [
-            { title: key.title },
-            { date: key.date },
-            { org: key.org },
-          ],
-        })),
-      },
-      select: { id: true, title: true, date: true, org: true },
-    });
+    // 一次性从数据库查询所有已存在的记录（使用重试机制处理连接失败）
+    const existingRecords = await withRetry(
+      () =>
+        prisma.report.findMany({
+          where: {
+            OR: uniqueKeys.map((key) => ({
+              AND: [
+                { title: key.title },
+                { date: key.date },
+                { org: key.org },
+              ],
+            })),
+          },
+          select: { id: true, title: true, date: true, org: true },
+        }),
+      3,
+      1000,
+    );
 
     console.log(`      ✓ 数据库中已存在 ${existingRecords.length} 条记录`);
     console.log(`      → 待处理: ${list.length - existingRecords.length} 条新数据 + ${existingRecords.length} 条待更新`);
@@ -208,91 +213,121 @@ const syncCategory = async (
     let processedCount = 0;
     let successCount = 0;
 
+    // 每条记录超时时间（毫秒）
+    const RECORD_TIMEOUT = 60000;
+
+    // 为每个记录添加超时机制
+    const processRecord = async (record: Record<string, unknown>, recordIndex: number) => {
+      const recordTitle = String(record.title ?? "").substring(0, 40);
+
+      try {
+        // 创建超时 Promise
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => {
+            reject(new Error(`记录处理超时 (${RECORD_TIMEOUT}ms)`));
+          }, RECORD_TIMEOUT);
+        });
+
+        // 主处理逻辑
+        const processPromise = (async () => {
+          const detail = await fetchDetailInfo(category, record);
+          const sourceUrl = resolveDetailUrl(category, record) ?? "";
+          const authors = normalizeAuthors(record.author ?? record.researcher);
+          const reportData = {
+            title: String(record.title ?? "").trim(),
+            category,
+            org: ensureOrgName(record),
+            author: authors.join(","),
+            date: ensureDate(record.publishDate),
+            summary: detail.summary,
+            pdfUrl: detail.pdfUrl,
+            sourceUrl,
+            stockCode:
+              (record.stockCode as string | undefined) ?? detail.stockCode ?? null,
+            stockName:
+              (record.stockName as string | undefined) ?? detail.stockName ?? null,
+            industry:
+              (record.industryName as string | undefined) ?? detail.industryName ?? null,
+            rating:
+              (record.sRatingName as string | undefined) ??
+              (record.rating as string | undefined) ??
+              null,
+            ratingChange:
+              record.ratingChange !== undefined ? String(record.ratingChange) : null,
+            targetPrice: toNumber(record.indvAimPriceT ?? record.indvAimPriceL),
+            changePercent: toNumber(record.changePercent),
+            topicTags: deduplicateTags(detail.topicTags),
+            impactLevel:
+              category === "strategy" || category === "macro" ? detail.impactLevel : null,
+            dataSource: "EastMoney" as const,
+          };
+
+          if (!reportData.title) {
+            throw new Error("报告标题为空");
+          }
+
+          // 在内存中查找是否已存在
+          const mapKey = `${reportData.title}|${reportData.date.toISOString()}|${reportData.org}`;
+          const existingId = existingMap.get(mapKey);
+
+          if (existingId) {
+            // 已存在 → 更新（使用重试机制）
+            await withRetry(
+              () =>
+                prisma.report.update({
+                  where: { id: existingId },
+                  data: reportData,
+                }),
+              2,
+              500,
+            );
+            summary.updated += 1;
+          } else {
+            // 不存在 → 新增（使用重试机制）
+            await withRetry(
+              () =>
+                prisma.report.create({
+                  data: { ...reportData, createdAt: chinaNow() },
+                }),
+              2,
+              500,
+            );
+            summary.inserted += 1;
+          }
+
+          return true;
+        })();
+
+        // 竞速：哪个先完成就用哪个的结果
+        await Promise.race([processPromise, timeoutPromise]);
+
+        successCount += 1;
+        processedCount += 1;
+        // 每处理 50 条显示一次进度
+        if (processedCount % 50 === 0) {
+          console.log(`      ⟳ 已处理 ${processedCount}/${list.length} 条...`);
+        }
+      } catch (error) {
+        summary.errors += 1;
+        processedCount += 1;
+        const message = error instanceof Error ? error.message : String(error);
+
+        // 所有错误都打印出来，便于排查
+        console.error(
+          `      ✗ 记录 [${recordIndex + 1}/${list.length}] 处理失败: ${recordTitle}`,
+        );
+        console.error(`        错误: ${message.substring(0, 150)}`);
+
+        if (process.env.DEBUG) {
+          console.error(`        完整错误:`, error);
+        }
+      }
+    };
+
+    // 使用 p-limit 处理并发
     await Promise.all(
       list.map((record, recordIndex) =>
-        limit(async () => {
-          try {
-            const recordTitle = String(record.title ?? "").substring(0, 40);
-
-            const detail = await fetchDetailInfo(category, record);
-            const sourceUrl = resolveDetailUrl(category, record) ?? "";
-            const authors = normalizeAuthors(record.author ?? record.researcher);
-            const reportData = {
-              title: String(record.title ?? "").trim(),
-              category,
-              org: ensureOrgName(record),
-              author: authors.join(","),
-              date: ensureDate(record.publishDate),
-              summary: detail.summary,
-              pdfUrl: detail.pdfUrl,
-              sourceUrl,
-              stockCode:
-                (record.stockCode as string | undefined) ?? detail.stockCode ?? null,
-              stockName:
-                (record.stockName as string | undefined) ?? detail.stockName ?? null,
-              industry:
-                (record.industryName as string | undefined) ?? detail.industryName ?? null,
-              rating:
-                (record.sRatingName as string | undefined) ??
-                (record.rating as string | undefined) ??
-                null,
-              ratingChange:
-                record.ratingChange !== undefined ? String(record.ratingChange) : null,
-              targetPrice: toNumber(record.indvAimPriceT ?? record.indvAimPriceL),
-              changePercent: toNumber(record.changePercent),
-              topicTags: deduplicateTags(detail.topicTags),
-              impactLevel:
-                category === "strategy" || category === "macro" ? detail.impactLevel : null,
-              dataSource: "EastMoney" as const,
-            };
-
-            if (!reportData.title) {
-              summary.errors += 1;
-              return;
-            }
-
-            // 在内存中查找是否已存在
-            const mapKey = `${reportData.title}|${reportData.date.toISOString()}|${reportData.org}`;
-            const existingId = existingMap.get(mapKey);
-
-            if (existingId) {
-              // 已存在 → 更新
-              await prisma.report.update({
-                where: { id: existingId },
-                data: reportData,
-              });
-              summary.updated += 1;
-            } else {
-              // 不存在 → 新增
-              await prisma.report.create({
-                data: { ...reportData, createdAt: chinaNow() },
-              });
-              summary.inserted += 1;
-            }
-
-            successCount += 1;
-            processedCount += 1;
-            // 每处理 50 条显示一次进度
-            if (processedCount % 50 === 0) {
-              console.log(`      ⟳ 已处理 ${processedCount}/${list.length} 条...`);
-            }
-          } catch (error) {
-            summary.errors += 1;
-            processedCount += 1;
-            const message = error instanceof Error ? error.message : String(error);
-            const recordTitle = String(record.title ?? "").substring(0, 40);
-
-            // 所有错误都打印出来，便于排查
-            console.error(
-              `      ✗ 记录 [${recordIndex + 1}/${list.length}] 处理失败: ${recordTitle}`,
-            );
-            console.error(`        错误: ${message.substring(0, 150)}`);
-
-            if (process.env.DEBUG) {
-              console.error(`        完整错误:`, error);
-            }
-          }
-        }),
+        limit(() => processRecord(record, recordIndex)),
       ),
     );
 

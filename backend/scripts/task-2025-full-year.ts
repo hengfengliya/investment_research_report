@@ -69,12 +69,6 @@ const upsertCategoryByBatches = async (
 
   for (let i = 0; i < records.length; i += batchSize) {
     const batch = records.slice(i, i + batchSize);
-    const keys = batch.map((r) => ({ title: String(r.title ?? "").trim(), date: ensureDate(r.publishDate), org: ensureOrgName(r) }));
-    const existing = await prisma.report.findMany({
-      where: { OR: keys.map((k) => ({ AND: [{ title: k.title }, { date: k.date }, { org: k.org }] })) },
-      select: { id: true, title: true, date: true, org: true },
-    });
-    const existingMap = new Map(existing.map((r) => [`${r.title}|${r.date.toISOString()}|${r.org}`, r.id]));
 
     await Promise.all(
       batch.map((record) =>
@@ -108,17 +102,34 @@ const upsertCategoryByBatches = async (
               errors += 1;
               return;
             }
-            const mapKey = `${reportData.title}|${reportData.date.toISOString()}|${reportData.org}`;
-            const existingId = existingMap.get(mapKey);
-            if (existingId) {
-              await prisma.report.update({ where: { id: existingId }, data: reportData });
-              updated += 1;
-            } else {
-              await prisma.report.create({ data: { ...reportData, createdAt: chinaNow() } });
-              inserted += 1;
-            }
-          } catch {
+
+            // 使用 upsert 替代手动的 findUnique + update/create，避免竞态条件
+            // upsert 先尝试查找，存在则更新，不存在则创建
+            await prisma.report.upsert({
+              where: {
+                title_date_org: {
+                  title: reportData.title,
+                  date: reportData.date,
+                  org: reportData.org,
+                },
+              },
+              update: reportData,
+              create: { ...reportData, createdAt: chinaNow() },
+            });
+
+            // 由于 upsert 不能直接返回是创建还是更新的状态，
+            // 我们在后续通过重新查询来统计，或者接受无法精确区分的情况
+            // 为了性能考虑，这里暂时不区分，统一计为"已处理"
+            inserted += 1;
+          } catch (e) {
             errors += 1;
+            // 可选：记录具体错误信息便于调试
+            if (process.env.DEBUG_SYNC) {
+              console.error("同步单条记录失败", {
+                title: String(record.title ?? "").substring(0, 50),
+                error: e instanceof Error ? e.message : String(e),
+              });
+            }
           }
         }),
       ),

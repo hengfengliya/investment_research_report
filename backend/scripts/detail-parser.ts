@@ -77,15 +77,59 @@ const mapImpactLevel = (starValue?: string | number | null) => {
 
 /**
  * 从详情页脚本中提取 zwinfo JSON，用于读取摘要、附件等信息。
+ * 使用智能的大括号匹配而非贪心正则，避免未转义字符串导致的解析错误。
  */
 const extractZwinfo = (html: string) => {
-  const match = html.match(/var\s+zwinfo\s*=\s*(\{[\s\S]*?\});/);
-  if (!match) return null;
+  const varStart = html.indexOf("var zwinfo = {");
+  if (varStart === -1) return null;
+
+  let braceCount = 0;
+  let inString = false;
+  let escapeNext = false;
+  let jsonEnd = -1;
+
+  for (let i = varStart + 13; i < html.length; i++) {
+    const char = html[i];
+
+    if (escapeNext) {
+      escapeNext = false;
+      continue;
+    }
+
+    if (char === "\\") {
+      escapeNext = true;
+      continue;
+    }
+
+    if (char === '"' && !inString) {
+      inString = true;
+      continue;
+    }
+
+    if (char === '"' && inString) {
+      inString = false;
+      continue;
+    }
+
+    if (!inString) {
+      if (char === "{") braceCount += 1;
+      if (char === "}") {
+        braceCount -= 1;
+        if (braceCount === 0) {
+          jsonEnd = i;
+          break;
+        }
+      }
+    }
+  }
+
+  if (jsonEnd === -1) return null;
 
   try {
-    return JSON.parse(match[1]) as Record<string, unknown>;
+    const jsonStr = html.substring(varStart + 13, jsonEnd + 1);
+    return JSON.parse(jsonStr) as Record<string, unknown>;
   } catch (error) {
-    console.warn("解析 zwinfo 失败", error);
+    console.warn("解析 zwinfo 失败，可能是嵌套结构不完整或包含特殊字符", error);
     return null;
   }
 };

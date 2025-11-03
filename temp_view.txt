@@ -1,0 +1,15 @@
+﻿import type { Config } from "tailwindcss";
+
+// Tailwind 閰嶇疆鏂囦欢锛屽憡鐭ユ壂鎻忕殑妯℃澘璺緞銆?export default {
+  content: ["./index.html", "./src/**/*.{ts,tsx}"],
+  theme: {
+    extend: {
+      colors: {
+        brand: {
+          primary: "#1f6feb", // 鑷畾涔夊搧鐗岃摑鑹诧紝瀵瑰簲涓滄柟璐㈠瘜椋庢牸銆?          secondary: "#0c1e3e",
+        },
+      },
+    },
+  },
+  plugins: [],
+} satisfies Config;

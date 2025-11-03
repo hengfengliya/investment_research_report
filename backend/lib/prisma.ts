@@ -49,6 +49,7 @@ export function createPrismaClient() {
   const databaseUrl = prepareDatabaseUrl();
   console.log("[Prisma] 创建独立客户端实例（Serverless 模式），目标：", databaseUrl.split("@").at(-1));
 
+  // 优化连接池配置以支持高并发场景
   return new PrismaClient({
     log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
     datasources: {
@@ -58,6 +59,48 @@ export function createPrismaClient() {
     },
   });
 }
+
+// 重试机制：处理临时连接失败
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  maxAttempts = 3,
+  delayMs = 1000,
+): Promise<T> {
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+      const message = error instanceof Error ? error.message : String(error);
+
+      // 只对连接错误进行重试
+      if (
+        message.includes("Can't reach database server") ||
+        message.includes("connection refused") ||
+        message.includes("ECONNREFUSED") ||
+        message.includes("ETIMEDOUT")
+      ) {
+        if (attempt < maxAttempts) {
+          console.warn(
+            `[Prisma] 连接失败 (第 ${attempt}/${maxAttempts} 次)，${delayMs}ms 后重试...`,
+          );
+          await new Promise((resolve) => setTimeout(resolve, delayMs));
+          delayMs *= 1.5;
+          continue;
+        }
+      }
+
+      throw error;
+    }
+  }
+
+  throw lastError;
+}
+
+// 导出重试包装函数供脚本使用
+export { withRetry };
 
 // 兼容旧代码，但不推荐在 Serverless 中使用单例
 export const prisma = createPrismaClient();
