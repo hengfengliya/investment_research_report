@@ -1,4 +1,34 @@
-﻿import { PrismaClient } from "@prisma/client";
+import { readFileSync } from "fs";
+import { resolve, dirname } from "path";
+import { fileURLToPath } from "url";
+import { PrismaClient } from "@prisma/client";
+
+// 自动加载 .env 文件（如果存在）
+const __filename = fileURLToPath(import.meta.url);
+const projectRoot = resolve(dirname(__filename), "../..");
+const envPath = resolve(projectRoot, ".env");
+
+try {
+  if (process.env.DATABASE_URL === undefined) {
+    const envContent = readFileSync(envPath, "utf-8");
+    envContent.split("\n").forEach((line) => {
+      const trimmed = line.trim();
+      if (trimmed && !trimmed.startsWith("#")) {
+        const [key, ...valueParts] = trimmed.split("=");
+        const value = valueParts.join("=");
+        if (key && value) {
+          const cleanKey = key.trim();
+          const cleanValue = value.trim().replace(/^["']|["']$/g, "");
+          if (!process.env[cleanKey]) {
+            process.env[cleanKey] = cleanValue;
+          }
+        }
+      }
+    });
+  }
+} catch {
+  // .env 文件不存在或无法读取，使用系统环境变量
+}
 
 function prepareDatabaseUrl() {
   const rawDatabaseUrl = process.env.DATABASE_URL;

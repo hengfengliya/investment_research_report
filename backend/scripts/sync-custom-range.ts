@@ -1,3 +1,5 @@
+#!/usr/bin/env bun
+
 import pLimit from "p-limit";
 import { prisma } from "../lib/prisma.js";
 import type { ReportCategory } from "./category-config.js";
