@@ -4,6 +4,8 @@
   "type": "module",
   "scripts": {
     "task:2025": "bun run ./scripts/task-2025-full-year.ts",
+    "sync": "bun run ./scripts/sync-runner.ts",
+    "sync:date": "bun run ./scripts/sync-custom-range.ts",
     "dev": "bun --watch server.ts",
     "start": "bun run server.ts",
     "lint": "bunx biome check .",
