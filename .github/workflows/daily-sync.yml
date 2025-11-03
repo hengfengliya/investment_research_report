@@ -1,63 +1,4 @@
-# GitHub Actions 工作流：每天自动抓取研报数据
-
-name: Daily Sync Research Reports
-
-# 触发条件
-on:
-  # 每天早上 6 点 (北京时间) 运行
-  # 北京时间 UTC+8，所以 06:00 - 8 小时 = UTC 22:00（前一天晚上）
-  schedule:
-    - cron: '0 22 * * *'
-
-  # 也可以手动触发（在 GitHub 网页上点击）
-  workflow_dispatch:
-
-jobs:
-  sync:
-    runs-on: ubuntu-latest
-    # 使用环境级变量（Environment variables）。若你的环境名不同，请改为对应名称。
-    environment:
-      name: production
-    env:
-      # 优先从环境级 variables 读取；如需改回仓库 Secrets，可将 vars.* 替换为 secrets.*
-      DATABASE_URL: ${{ vars.DATABASE_URL }}
-      SYNC_LOOKBACK_DAYS: ${{ vars.SYNC_LOOKBACK_DAYS || 2 }}
-      SYNC_CONCURRENCY: ${{ vars.SYNC_CONCURRENCY || 8 }}
-
-    steps:
-      # Step 1: 检出代码
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      # Step 2: 安装 Bun
-      - name: Install Bun
-        uses: oven-sh/setup-bun@v1
-        with:
-          bun-version: latest
-
-      # Step 3: 安装依赖
-      - name: Install dependencies
-        run: |
-          cd backend
-          npm install
-
-      # Step 4: 生成 Prisma 客户端
-      - name: Generate Prisma client
-        run: |
-          cd backend
-          npx prisma generate --schema ../prisma/schema.prisma
-
-      # Step 5: 运行抓取脚本
-      - name: Run sync script
-        run: |
-          cd backend
-          bun run scripts/sync-runner.ts
-
-      # Step 6: 如果失败，发送通知（可选）
-      - name: Notify on failure
-        if: failure()
-        run: echo "❌ 数据抓取失败，请检查日志"
-name: Daily Sync Research Reports
+﻿name: Daily Sync Research Reports
 
 on:
   schedule:
@@ -99,7 +40,7 @@ jobs:
       - name: Run sync script
         run: |
           cd backend
-          bun run scripts/sync-runner.ts
+          bunx tsx ./scripts/sync-runner.ts
 
       - name: Notify on failure
         if: failure()
