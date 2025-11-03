@@ -1,10 +1,17 @@
 #!/usr/bin/env bun
 
 import pLimit from "p-limit";
+import { writeFileSync, existsSync } from "fs";
+import { resolve, dirname } from "path";
+import { fileURLToPath } from "url";
 import { prisma, withRetry } from "../lib/prisma.js";
 import type { ReportCategory } from "./category-config.js";
 import { fetchCategoryListInRange } from "./fetch-list.js";
 import { fetchDetailInfo, resolveDetailUrl } from "./detail-parser.js";
+
+// 获取项目根目录（用于生成错误日志）
+const __filename = fileURLToPath(import.meta.url);
+const projectRoot = resolve(dirname(__filename), "../..");
 
 /**
  * 并发抓取详情页的并发数（建议 2-4，过高会导致数据库连接耗尽）
@@ -45,9 +52,80 @@ interface SyncSummary {
   totalUpdated: number;
   totalErrors: number;
   categories: CategorySummary[];
+  errorLogFile?: string;
+}
+
+// 错误日志接口
+interface ErrorRecord {
+  timestamp: string;
+  category: ReportCategory;
+  index: number;
+  title: string;
+  error: string;
+  record?: Record<string, unknown>;
 }
 
 const limit = pLimit(CONCURRENCY);
+
+// 错误日志管理器
+class ErrorLogger {
+  private errors: ErrorRecord[] = [];
+  private logFile: string;
+
+  constructor(startDate: string, endDate: string) {
+    const timestamp = new Date().toISOString().split("T")[0];
+    this.logFile = resolve(projectRoot, `sync-errors-${startDate}-to-${endDate}-${timestamp}.json`);
+  }
+
+  // 记录错误
+  addError(
+    category: ReportCategory,
+    index: number,
+    title: string,
+    error: string,
+    record?: Record<string, unknown>,
+  ) {
+    this.errors.push({
+      timestamp: new Date().toISOString(),
+      category,
+      index,
+      title,
+      error,
+      record,
+    });
+  }
+
+  // 保存到文件
+  save() {
+    if (this.errors.length === 0) {
+      return null;
+    }
+
+    const content = {
+      summary: {
+        totalErrors: this.errors.length,
+        byCategory: this.errors.reduce(
+          (acc, err) => {
+            acc[err.category] = (acc[err.category] || 0) + 1;
+            return acc;
+          },
+          {} as Record<string, number>,
+        ),
+        generatedAt: new Date().toISOString(),
+      },
+      errors: this.errors,
+    };
+
+    writeFileSync(this.logFile, JSON.stringify(content, null, 2));
+    console.log(`\n✓ 错误日志已保存到: ${this.logFile}`);
+    return this.logFile;
+  }
+
+  // 获取错误数量
+  getErrorCount() {
+    return this.errors.length;
+  }
+}
 
 // 辅助函数：数值转换
 const toNumber = (value: unknown) => {
@@ -141,6 +219,7 @@ const syncCategory = async (
   category: ReportCategory,
   startDate: string,
   endDate: string,
+  errorLogger: ErrorLogger,
 ): Promise<CategorySummary> => {
   const summary: CategorySummary = {
     category,
@@ -312,6 +391,9 @@ const syncCategory = async (
         processedCount += 1;
         const message = error instanceof Error ? error.message : String(error);
 
+        // 记录错误到日志
+        errorLogger.addError(category, recordIndex + 1, recordTitle, message, record);
+
         // 所有错误都打印出来，便于排查
         console.error(
           `      ✗ 记录 [${recordIndex + 1}/${list.length}] 处理失败: ${recordTitle}`,
@@ -364,6 +446,9 @@ export const syncCustomDateRange = async (
   console.log(`⚙️  并发数: ${CONCURRENCY}`);
   console.log(`📊 分类: 策略研报 → 宏观研报 → 行业研报 → 个股研报\n`);
 
+  // 初始化错误日志记录器
+  const errorLogger = new ErrorLogger(startDate, endDate);
+
   const categories: CategorySummary[] = [];
   const startTime = Date.now();
 
@@ -372,7 +457,7 @@ export const syncCustomDateRange = async (
     const categoryName = CATEGORY_NAMES[category];
     console.log(`\n▶︎ 进度: ${i + 1}/${CATEGORY_SEQUENCE.length} - 正在处理【${categoryName}】...`);
 
-    const result = await syncCategory(category, startDate, endDate);
+    const result = await syncCategory(category, startDate, endDate, errorLogger);
     categories.push(result);
   }
 
@@ -389,7 +474,7 @@ export const syncCustomDateRange = async (
   console.log("╔════════════════════════════════════════════════════════════╗");
   console.log("║                       ✓ 同步完成                            ║");
   console.log("╚════════════════════════════════════════════════════════════╝");
-  console.log(`\n📊 汇总统计（耗时 ${elapsed}s）:`);
+  console.log(`\n📊 汇总统计（耗时 ${elapsed}s）:`);;
   console.log(`   • 总获取条数: ${totalFetched} 条`);
   console.log(`   • 新增条数:   ${totalInserted} 条 ✓`);
   console.log(`   • 更新条数:   ${totalUpdated} 条 ✓`);
@@ -406,6 +491,12 @@ export const syncCustomDateRange = async (
 
   console.log("\n");
 
+  // 保存错误日志
+  const errorLogFile = errorLogger.save();
+  if (errorLogFile) {
+    console.log(`\n✓ 错误日志已保存到: ${errorLogFile}`);
+  }
+
   return {
     dateRange: { start: startDate, end: endDate },
     totalFetched,
@@ -413,6 +504,7 @@ export const syncCustomDateRange = async (
     totalUpdated,
     totalErrors,
     categories,
+    errorLogFile: errorLogFile || undefined,
   };
 };
 

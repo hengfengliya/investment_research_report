@@ -6,6 +6,7 @@
     "task:2025": "bun run ./scripts/task-2025-full-year.ts",
     "sync": "bun run ./scripts/sync-runner.ts",
     "sync:date": "bun run ./scripts/sync-custom-range.ts",
+    "sync:retry": "bun run ./scripts/sync-retry-errors.ts",
     "diagnose": "bun run ./scripts/diagnose-sync.ts",
     "dev": "bun --watch server.ts",
     "start": "bun run server.ts",
