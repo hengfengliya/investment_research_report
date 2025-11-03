@@ -2,6 +2,114 @@
 
 ## 优化清单
 
+### ✅ 优化3：数据库连接重试机制 + 记录级超时（2025-11-03）
+
+**文件修改：**
+- `backend/lib/prisma.ts` - 添加 `withRetry()` 函数
+- `backend/scripts/sync-custom-range.ts` - 应用重试和超时机制
+
+**改动：**
+
+#### 1. 数据库连接重试机制
+```typescript
+// backend/lib/prisma.ts
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  maxAttempts = 3,
+  delayMs = 1000,
+): Promise<T> {
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      // 自动检测连接错误：Can't reach database server, ECONNREFUSED, ETIMEDOUT
+      if (
+        message.includes("Can't reach database server") ||
+        message.includes("ECONNREFUSED") ||
+        message.includes("ETIMEDOUT")
+      ) {
+        if (attempt < maxAttempts) {
+          console.warn(`[Prisma] 连接失败 (第 ${attempt}/${maxAttempts} 次)，${delayMs}ms 后重试...`);
+          await new Promise((resolve) => setTimeout(resolve, delayMs));
+          delayMs *= 1.5; // 指数退避：1s → 1.5s → 2.25s
+          continue;
+        }
+      }
+      throw error;
+    }
+  }
+  throw lastError;
+}
+```
+
+#### 2. 记录级超时机制
+```typescript
+// backend/scripts/sync-custom-range.ts - 第 212-292 行
+const RECORD_TIMEOUT = 60000; // 60 秒
+
+// 为每条记录创建超时 Promise
+const timeoutPromise = new Promise((_, reject) => {
+  setTimeout(() => {
+    reject(new Error(`记录处理超时 (${RECORD_TIMEOUT}ms)`));
+  }, RECORD_TIMEOUT);
+});
+
+// 使用 Promise.race() 竞速：哪个先完成就用哪个
+await Promise.race([processPromise, timeoutPromise]);
+```
+
+#### 3. 在关键数据库操作中应用重试
+```typescript
+// 查询已存在记录（使用 3 次重试）
+const existingRecords = await withRetry(
+  () => prisma.report.findMany({ ... }),
+  3,
+  1000,
+);
+
+// 创建/更新报告（使用 2 次重试）
+await withRetry(
+  () => prisma.report.update({ ... }),
+  2,
+  500,
+);
+```
+
+**效果：**
+- ✅ 脚本不再无限期挂起
+- ✅ 临时网络故障自动恢复
+- ✅ 问题记录被识别和记录，不会阻塞后续处理
+- ✅ 98.8% 成功率（3125/3163 条记录）
+
+**完整月份测试结果 (2025-01-01 至 2025-01-31)：**
+
+| 分类 | 获取 | 新增 | 更新 | 错误 | 成功率 |
+|------|------|------|------|------|--------|
+| 策略研报 | 397 | 0 | 392 | 5 | 98.7% |
+| 宏观研报 | 362 | 312 | 44 | 6 | 98.3% |
+| 行业研报 | 1815 | 1495 | 300 | 20 | 98.9% |
+| 个股研报 | 589 | 515 | 67 | 7 | 98.8% |
+| **总计** | **3163** | **2322** | **803** | **38** | **98.8%** |
+
+**耗时对比：**
+- 5 日范围：309 秒 (432 条，全部成功)
+- 30 日范围：4070 秒 (~68 分钟，3125/3163 成功)
+
+**工作原理：**
+- 数据库连接失败会自动重试 1-3 次，间隔 1-2.25 秒
+- 单个记录超时 60 秒后被跳过，处理继续进行
+- 错误记录被清晰地标记和记录，便于后续排查
+
+**适用场景：**
+- ✅ 手动执行全月同步（无需担心卡住）
+- ✅ GitHub Actions 自动运行（临时故障自动恢复）
+- ✅ Vercel Serverless 部署（短暂中断可恢复）
+- ✅ 大规模数据处理（1815+ 记录处理）
+
+---
+
 ### ✅ 优化1：增加并发数 (4 → 8)
 
 **文件修改：** `backend/scripts/sync-runner.ts:9`
