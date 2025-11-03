@@ -1,4 +1,4 @@
-﻿name: Daily Sync Research Reports
+name: Daily Sync Research Reports
 
 on:
   schedule:
