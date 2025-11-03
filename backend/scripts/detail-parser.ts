@@ -112,6 +112,7 @@ export const fetchDetailInfo = async (
   }
 
   const doFetch = () => axios.get<string>(url, {
+    timeout: 30000,
     headers: {
       Referer: CATEGORY_CONFIGS[category].referer,
       "User-Agent":
@@ -125,11 +126,11 @@ export const fetchDetailInfo = async (
     response = await doFetch();
   } catch (e) {
     // 简单重试两次，缓解偶发网络/压缩错误
-    await new Promise((r) => setTimeout(r, 300));
+    await new Promise((r) => setTimeout(r, 500));
     try {
       response = await doFetch();
     } catch {
-      await new Promise((r) => setTimeout(r, 700));
+      await new Promise((r) => setTimeout(r, 1000));
       response = await doFetch();
     }
   }

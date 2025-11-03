@@ -97,20 +97,21 @@ const buildParams = (category: ReportCategory) => {
 
 const http = axios.create({
   baseURL: API_BASE,
-  timeout: 15000,
+  timeout: 30000,
   // 关闭压缩，避免部分环境下 br/gzip 解压偶发 zlib 错误
   headers: { "Accept-Encoding": "identity" },
 });
 
 // 简易重试封装：处理网络抖动或被限流导致的瞬时错误
-const withRetry = async <R>(fn: () => Promise<R>, attempts = 3, baseDelay = 400): Promise<R> => {
+const withRetry = async <R>(fn: () => Promise<R>, attempts = 5, baseDelay = 800): Promise<R> => {
   let last: unknown;
   for (let i = 0; i < attempts; i++) {
     try {
       return await fn();
     } catch (e) {
       last = e;
-      const sleep = baseDelay * Math.pow(2, i) + Math.floor(Math.random() * 120);
+      // 指数退避策略：800ms -> 1600ms -> 3200ms -> 6400ms -> 12800ms，加上随机 jitter
+      const sleep = baseDelay * Math.pow(2, i) + Math.floor(Math.random() * 200);
       await new Promise((r) => setTimeout(r, sleep));
     }
   }
