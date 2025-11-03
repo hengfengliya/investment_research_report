@@ -3,7 +3,7 @@
     "version":  "0.1.0",
     "type":  "module",
     "scripts":  {
-    "task:2025":  "bunx tsx ./scripts/task-2025-full-year.ts",
+    "task:2025":  "bun run ./scripts/task-2025-full-year.ts",
                     "dev":  "bun --watch server.ts",
                     "start":  "bun run server.ts",
                     "lint":  "bunx biome check .",
@@ -24,3 +24,4 @@
                             "prisma":  "^5.20.0"
                         }
 }
+
