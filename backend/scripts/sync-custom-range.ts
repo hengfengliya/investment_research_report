@@ -341,7 +341,7 @@ export const syncCustomDateRange = async (
     categories.push(result);
   }
 
-  await prisma.$disconnect();
+  // 不在这里调用 disconnect，让外层管理
 
   const totalFetched = categories.reduce((sum, item) => sum + item.fetched, 0);
   const totalInserted = categories.reduce((sum, item) => sum + item.inserted, 0);
@@ -412,7 +412,24 @@ if (isDirectRun) {
 
   syncCustomDateRange(startDate, endDate)
     .then((summary) => {
-      process.exit(0);
+      console.log("正在关闭数据库连接...");
+      // 设置 10 秒超时强制退出
+      const timeoutId = setTimeout(() => {
+        console.log("数据库连接关闭超时，强制退出");
+        process.exit(0);
+      }, 10000);
+
+      prisma.$disconnect()
+        .then(() => {
+          clearTimeout(timeoutId);
+          console.log("✓ 数据库连接已关闭");
+          process.exit(0);
+        })
+        .catch((error) => {
+          clearTimeout(timeoutId);
+          console.error("❌ 关闭数据库连接时出错:", error);
+          process.exit(0);
+        });
     })
     .catch((error) => {
       console.error("❌ 同步失败:", error);
