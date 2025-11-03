@@ -7,9 +7,10 @@ import { fetchCategoryListInRange } from "./fetch-list.js";
 import { fetchDetailInfo, resolveDetailUrl } from "./detail-parser.js";
 
 /**
- * 并发抓取详情页的并发数（建议 6-8，过高会被限流）
+ * 并发抓取详情页的并发数（建议 2-4，过高会导致数据库连接耗尽）
+ * 从环境变量读取，默认 2
  */
-const CONCURRENCY = Number(process.env.SYNC_CONCURRENCY ?? "8");
+const CONCURRENCY = Number(process.env.SYNC_CONCURRENCY ?? "2");
 
 /**
  * 按分类顺序抓取（策略 → 宏观 → 行业 → 个股）
@@ -205,11 +206,14 @@ const syncCategory = async (
 
     console.log(`[3/4] 抓取详情页并入库（并发数: ${CONCURRENCY}）...`);
     let processedCount = 0;
+    let successCount = 0;
 
     await Promise.all(
-      list.map((record) =>
+      list.map((record, recordIndex) =>
         limit(async () => {
           try {
+            const recordTitle = String(record.title ?? "").substring(0, 40);
+
             const detail = await fetchDetailInfo(category, record);
             const sourceUrl = resolveDetailUrl(category, record) ?? "";
             const authors = normalizeAuthors(record.author ?? record.researcher);
@@ -266,6 +270,7 @@ const syncCategory = async (
               summary.inserted += 1;
             }
 
+            successCount += 1;
             processedCount += 1;
             // 每处理 50 条显示一次进度
             if (processedCount % 50 === 0) {
@@ -273,14 +278,25 @@ const syncCategory = async (
             }
           } catch (error) {
             summary.errors += 1;
+            processedCount += 1;
             const message = error instanceof Error ? error.message : String(error);
+            const recordTitle = String(record.title ?? "").substring(0, 40);
+
+            // 所有错误都打印出来，便于排查
+            console.error(
+              `      ✗ 记录 [${recordIndex + 1}/${list.length}] 处理失败: ${recordTitle}`,
+            );
+            console.error(`        错误: ${message.substring(0, 150)}`);
+
             if (process.env.DEBUG) {
-              console.error(`      ✗ 记录处理失败：${message.substring(0, 100)}`);
+              console.error(`        完整错误:`, error);
             }
           }
         }),
       ),
     );
+
+    console.log(`      ✓ 详情页抓取完成 (成功: ${successCount}, 失败: ${summary.errors})`);
 
     console.log(`[4/4] 汇总统计`);
     console.log(`      ✓ 新增: ${summary.inserted} 条`);
