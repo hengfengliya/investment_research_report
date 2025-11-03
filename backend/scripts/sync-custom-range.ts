@@ -21,6 +21,14 @@ const CATEGORY_SEQUENCE: ReportCategory[] = [
   "stock",
 ];
 
+// 分类中文映射，便于日志阅读
+const CATEGORY_NAMES: Record<ReportCategory, string> = {
+  strategy: "策略研报",
+  macro: "宏观研报",
+  industry: "行业研报",
+  stock: "个股研报",
+};
+
 interface CategorySummary {
   category: ReportCategory;
   fetched: number;
@@ -142,21 +150,26 @@ const syncCategory = async (
   };
 
   try {
-    console.log(`[${category}] 正在抓取 ${startDate} 至 ${endDate} 的数据...`);
+    const categoryName = CATEGORY_NAMES[category];
+    console.log(`\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+    console.log(`【${categoryName}】开始处理`);
+    console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+
+    console.log(`[1/4] 从 API 查询 ${startDate} 至 ${endDate} 的数据...`);
     const list = await fetchCategoryListInRange<Record<string, unknown>>(
       category,
       startDate,
       endDate,
     );
     summary.fetched = list.length;
-    console.log(`[${category}] ✓ 获取 ${list.length} 条数据`);
+    console.log(`      ✓ 获取 ${list.length} 条数据`);
 
     if (list.length === 0) {
-      console.log(`[${category}] 未找到数据`);
+      console.log(`      ℹ 未找到数据，跳过后续处理\n`);
       return summary;
     }
 
-    console.log(`[${category}] 开始处理详情页和入库...`);
+    console.log(`[2/4] 检查数据库中的已存在记录用于去重...`);
 
     // 构建唯一键列表用于批量查询
     const uniqueKeys = list.map((record) => ({
@@ -179,7 +192,8 @@ const syncCategory = async (
       select: { id: true, title: true, date: true, org: true },
     });
 
-    console.log(`[${category}] 检查去重：数据库中已存在 ${existingRecords.length} 条记录`);
+    console.log(`      ✓ 数据库中已存在 ${existingRecords.length} 条记录`);
+    console.log(`      → 待处理: ${list.length - existingRecords.length} 条新数据 + ${existingRecords.length} 条待更新`);
 
     // 在内存中构建 Map，快速查找
     const existingMap = new Map(
@@ -188,6 +202,9 @@ const syncCategory = async (
         record.id,
       ]),
     );
+
+    console.log(`[3/4] 抓取详情页并入库（并发数: ${CONCURRENCY}）...`);
+    let processedCount = 0;
 
     await Promise.all(
       list.map((record) =>
@@ -248,23 +265,32 @@ const syncCategory = async (
               });
               summary.inserted += 1;
             }
+
+            processedCount += 1;
+            // 每处理 50 条显示一次进度
+            if (processedCount % 50 === 0) {
+              console.log(`      ⟳ 已处理 ${processedCount}/${list.length} 条...`);
+            }
           } catch (error) {
             summary.errors += 1;
             const message = error instanceof Error ? error.message : String(error);
             if (process.env.DEBUG) {
-              console.error(`[${category}] 同步单条记录失败：${message.substring(0, 100)}`);
+              console.error(`      ✗ 记录处理失败：${message.substring(0, 100)}`);
             }
           }
         }),
       ),
     );
 
-    console.log(
-      `[${category}] ✓ 完成 - 新增: ${summary.inserted}, 更新: ${summary.updated}, 错误: ${summary.errors}`,
-    );
+    console.log(`[4/4] 汇总统计`);
+    console.log(`      ✓ 新增: ${summary.inserted} 条`);
+    console.log(`      ✓ 更新: ${summary.updated} 条`);
+    console.log(`      ✓ 错误: ${summary.errors} 条`);
+    console.log(`\n【${categoryName}】处理完成 ✓\n`);
   } catch (error) {
+    const categoryName = CATEGORY_NAMES[category];
     const message = error instanceof Error ? error.message : String(error);
-    console.error(`[${category}] ✗ 分类抓取失败：${message}`);
+    console.error(`\n✗ 【${categoryName}】处理失败：${message}`);
     console.error((error as any).stack);
     summary.errors += 1;
   }
@@ -279,12 +305,22 @@ export const syncCustomDateRange = async (
   startDate: string,
   endDate: string,
 ): Promise<SyncSummary> => {
-  console.log("\n=== 开始自定义日期范围数据同步 ===");
-  console.log(`日期范围: ${startDate} 至 ${endDate}\n`);
+  console.log("\n");
+  console.log("╔════════════════════════════════════════════════════════════╗");
+  console.log("║     🌐 东方财富研报聚合 - 自定义日期范围数据同步           ║");
+  console.log("╚════════════════════════════════════════════════════════════╝");
+  console.log(`\n📅 日期范围: ${startDate} 至 ${endDate}`);
+  console.log(`⚙️  并发数: ${CONCURRENCY}`);
+  console.log(`📊 分类: 策略研报 → 宏观研报 → 行业研报 → 个股研报\n`);
 
   const categories: CategorySummary[] = [];
+  const startTime = Date.now();
 
-  for (const category of CATEGORY_SEQUENCE) {
+  for (let i = 0; i < CATEGORY_SEQUENCE.length; i++) {
+    const category = CATEGORY_SEQUENCE[i];
+    const categoryName = CATEGORY_NAMES[category];
+    console.log(`\n▶︎ 进度: ${i + 1}/${CATEGORY_SEQUENCE.length} - 正在处理【${categoryName}】...`);
+
     const result = await syncCategory(category, startDate, endDate);
     categories.push(result);
   }
@@ -295,6 +331,29 @@ export const syncCustomDateRange = async (
   const totalInserted = categories.reduce((sum, item) => sum + item.inserted, 0);
   const totalUpdated = categories.reduce((sum, item) => sum + item.updated, 0);
   const totalErrors = categories.reduce((sum, item) => sum + item.errors, 0);
+  const elapsed = Math.round((Date.now() - startTime) / 1000);
+
+  // 生成最终摘要
+  console.log("\n");
+  console.log("╔════════════════════════════════════════════════════════════╗");
+  console.log("║                       ✓ 同步完成                            ║");
+  console.log("╚════════════════════════════════════════════════════════════╝");
+  console.log(`\n📊 汇总统计（耗时 ${elapsed}s）:`);
+  console.log(`   • 总获取条数: ${totalFetched} 条`);
+  console.log(`   • 新增条数:   ${totalInserted} 条 ✓`);
+  console.log(`   • 更新条数:   ${totalUpdated} 条 ✓`);
+  console.log(`   • 错误条数:   ${totalErrors} 条`);
+
+  // 分类统计
+  console.log(`\n📋 分类统计:`);
+  categories.forEach((cat) => {
+    const name = CATEGORY_NAMES[cat.category];
+    console.log(
+      `   【${name}】获取: ${cat.fetched} | 新增: ${cat.inserted} | 更新: ${cat.updated} | 错误: ${cat.errors}`,
+    );
+  });
+
+  console.log("\n");
 
   return {
     dateRange: { start: startDate, end: endDate },
@@ -337,8 +396,6 @@ if (isDirectRun) {
 
   syncCustomDateRange(startDate, endDate)
     .then((summary) => {
-      console.log("\n=== 同步完成 ===");
-      console.log(JSON.stringify(summary, null, 2));
       process.exit(0);
     })
     .catch((error) => {
