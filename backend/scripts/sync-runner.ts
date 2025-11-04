@@ -4,9 +4,17 @@ import type { ReportCategory } from "./category-config.js";
 import { fetchCategoryList } from "./fetch-list.js";
 import { fetchDetailInfo, resolveDetailUrl } from "./detail-parser.js";
 /**
- * 并发抓取详情页的并发数（建议 6-8，过高会被限流）
+ * 并发抓取详情页的并发数（建议 4-6，过高会被限流）
  */
-const CONCURRENCY = Number(process.env.SYNC_CONCURRENCY ?? "8");
+const CONCURRENCY = Number(process.env.SYNC_CONCURRENCY ?? "4");
+
+/**
+ * 是否跳过已存在的记录（不更新）
+ * true = 跳过已存在记录，大幅提升速度（推荐）
+ * false = 更新已存在记录，确保数据最新
+ * 从环境变量读取，默认 true（跳过）
+ */
+const SKIP_EXISTING = process.env.SYNC_SKIP_EXISTING !== "false";
 /**
  * �̶�ͬ��˳������ץ���ԡ���ۣ��ٴ�����ҵ�͸��ɣ�����۲���־��
  */
@@ -21,12 +29,14 @@ interface CategorySummary {
   fetched: number;
   inserted: number;
   updated: number;
+  skipped: number;
   errors: number;
 }
 interface SyncSummary {
   totalFetched: number;
   totalInserted: number;
   totalUpdated: number;
+  totalSkipped: number;
   totalErrors: number;
   categories: CategorySummary[];
 }
@@ -110,6 +120,7 @@ const syncCategory = async (category: ReportCategory): Promise<CategorySummary> 
     fetched: 0,
     inserted: 0,
     updated: 0,
+    skipped: 0,
     errors: 0,
   };
   const list = await fetchCategoryList<Record<string, unknown>>(category);
@@ -191,9 +202,15 @@ const syncCategory = async (category: ReportCategory): Promise<CategorySummary> 
           const existingId = existingMap.get(mapKey);
 
           if (existingId) {
-            // 已存在 → 更新
-            await prisma.report.update({ where: { id: existingId }, data: reportData });
-            summary.updated += 1;
+            // 已存在
+            if (SKIP_EXISTING) {
+              // 跳过模式：不更新
+              summary.skipped += 1;
+            } else {
+              // 更新模式：更新已存在记录
+              await prisma.report.update({ where: { id: existingId }, data: reportData });
+              summary.updated += 1;
+            }
           } else {
             // 不存在 → 新增
             await prisma.report.create({ data: { ...reportData, createdAt: chinaNow() } });
@@ -219,11 +236,13 @@ export const runSyncOnce = async (): Promise<SyncSummary> => {
   const totalFetched = categories.reduce((sum, item) => sum + item.fetched, 0);
   const totalInserted = categories.reduce((sum, item) => sum + item.inserted, 0);
   const totalUpdated = categories.reduce((sum, item) => sum + item.updated, 0);
+  const totalSkipped = categories.reduce((sum, item) => sum + item.skipped, 0);
   const totalErrors = categories.reduce((sum, item) => sum + item.errors, 0);
   return {
     totalFetched,
     totalInserted,
     totalUpdated,
+    totalSkipped,
     totalErrors,
     categories,
   };

@@ -160,26 +160,21 @@ const ReportDetailPage = () => {
         </CardBody>
       </Card>
 
-      {/* 下载与原文 */}
-      <Card>
-        <CardBody className="space-y-3">
-          <CardTitle>获取原文</CardTitle>
-          <div className="flex flex-wrap gap-3">
-            {report.pdfUrl && (
+      {/* 下载 PDF */}
+      {report.pdfUrl && (
+        <Card>
+          <CardBody className="space-y-3">
+            <CardTitle>获取原文</CardTitle>
+            <div className="flex flex-wrap gap-3">
               <a href={report.pdfUrl} target="_blank" rel="noreferrer">
                 <Button variant="primary" size="sm">
                   下载 PDF
                 </Button>
               </a>
-            )}
-            <a href={report.sourceUrl} target="_blank" rel="noreferrer">
-              <Button variant="secondary" size="sm">
-                查看原文
-              </Button>
-            </a>
-          </div>
-        </CardBody>
-      </Card>
+            </div>
+          </CardBody>
+        </Card>
+      )}
 
       {/* 主题标签 */}
       {report.topicTags.length > 0 && (

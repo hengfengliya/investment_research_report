@@ -24,3 +24,8 @@ Thumbs.db
 # 调试文件
 debug/
 package-lock.json
+
+# 错误日志文件（保留 error-logs 文件夹结构）
+sync-errors-*.json
+error-logs/*.json
+!error-logs/.gitkeep

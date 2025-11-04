@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 
 import pLimit from "p-limit";
-import { writeFileSync, existsSync } from "fs";
+import { writeFileSync, existsSync, mkdirSync } from "fs";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 import { prisma, withRetry } from "../lib/prisma.js";
@@ -12,12 +12,21 @@ import { fetchDetailInfo, resolveDetailUrl } from "./detail-parser.js";
 // 获取项目根目录（用于生成错误日志）
 const __filename = fileURLToPath(import.meta.url);
 const projectRoot = resolve(dirname(__filename), "../..");
+const errorLogsDir = resolve(projectRoot, "error-logs");
 
 /**
  * 并发抓取详情页的并发数（建议 2-4，过高会导致数据库连接耗尽）
  * 从环境变量读取，默认 2
  */
 const CONCURRENCY = Number(process.env.SYNC_CONCURRENCY ?? "2");
+
+/**
+ * 是否跳过已存在的记录（不更新）
+ * true = 跳过已存在记录，大幅提升速度（推荐）
+ * false = 更新已存在记录，确保数据最新
+ * 从环境变量读取，默认 true（跳过）
+ */
+const SKIP_EXISTING = process.env.SYNC_SKIP_EXISTING !== "false";
 
 /**
  * 按分类顺序抓取（策略 → 宏观 → 行业 → 个股）
@@ -42,6 +51,7 @@ interface CategorySummary {
   fetched: number;
   inserted: number;
   updated: number;
+  skipped: number;
   errors: number;
 }
 
@@ -50,6 +60,7 @@ interface SyncSummary {
   totalFetched: number;
   totalInserted: number;
   totalUpdated: number;
+  totalSkipped: number;
   totalErrors: number;
   categories: CategorySummary[];
   errorLogFile?: string;
@@ -73,8 +84,13 @@ class ErrorLogger {
   private logFile: string;
 
   constructor(startDate: string, endDate: string) {
+    // 确保 error-logs 文件夹存在
+    if (!existsSync(errorLogsDir)) {
+      mkdirSync(errorLogsDir, { recursive: true });
+    }
+
     const timestamp = new Date().toISOString().split("T")[0];
-    this.logFile = resolve(projectRoot, `sync-errors-${startDate}-to-${endDate}-${timestamp}.json`);
+    this.logFile = resolve(errorLogsDir, `sync-errors-${startDate}-to-${endDate}-${timestamp}.json`);
   }
 
   // 记录错误
@@ -226,6 +242,7 @@ const syncCategory = async (
     fetched: 0,
     inserted: 0,
     updated: 0,
+    skipped: 0,
     errors: 0,
   };
 
@@ -278,7 +295,13 @@ const syncCategory = async (
     );
 
     console.log(`      ✓ 数据库中已存在 ${existingRecords.length} 条记录`);
-    console.log(`      → 待处理: ${list.length - existingRecords.length} 条新数据 + ${existingRecords.length} 条待更新`);
+    if (SKIP_EXISTING) {
+      console.log(`      → 跳过模式: 将跳过 ${existingRecords.length} 条已存在记录`);
+      console.log(`      → 待处理: ${list.length - existingRecords.length} 条新数据`);
+    } else {
+      console.log(`      → 更新模式: 将更新 ${existingRecords.length} 条已存在记录`);
+      console.log(`      → 待处理: ${list.length - existingRecords.length} 条新数据 + ${existingRecords.length} 条待更新`);
+    }
 
     // 在内存中构建 Map，快速查找
     const existingMap = new Map(
@@ -299,6 +322,24 @@ const syncCategory = async (
     const processRecord = async (record: Record<string, unknown>, recordIndex: number) => {
       const recordTitle = String(record.title ?? "").substring(0, 40);
 
+      // 检查是否已存在
+      const title = String(record.title ?? "").trim();
+      const date = ensureDate(record.publishDate);
+      const org = ensureOrgName(record);
+      const mapKey = `${title}|${date.toISOString()}|${org}`;
+      const existingId = existingMap.get(mapKey);
+
+      // 如果启用跳过模式且记录已存在，直接跳过
+      if (SKIP_EXISTING && existingId) {
+        summary.skipped += 1;
+        processedCount += 1;
+        // 每处理 50 条显示一次进度
+        if (processedCount % 50 === 0) {
+          console.log(`      ⟳ 已处理 ${processedCount}/${list.length} 条 (跳过: ${summary.skipped})...`);
+        }
+        return;
+      }
+
       try {
         // 创建超时 Promise
         const timeoutPromise = new Promise((_, reject) => {
@@ -313,11 +354,11 @@ const syncCategory = async (
           const sourceUrl = resolveDetailUrl(category, record) ?? "";
           const authors = normalizeAuthors(record.author ?? record.researcher);
           const reportData = {
-            title: String(record.title ?? "").trim(),
+            title,
             category,
-            org: ensureOrgName(record),
+            org,
             author: authors.join(","),
-            date: ensureDate(record.publishDate),
+            date,
             summary: detail.summary,
             pdfUrl: detail.pdfUrl,
             sourceUrl,
@@ -344,10 +385,6 @@ const syncCategory = async (
           if (!reportData.title) {
             throw new Error("报告标题为空");
           }
-
-          // 在内存中查找是否已存在
-          const mapKey = `${reportData.title}|${reportData.date.toISOString()}|${reportData.org}`;
-          const existingId = existingMap.get(mapKey);
 
           if (existingId) {
             // 已存在 → 更新（使用重试机制）
@@ -417,8 +454,12 @@ const syncCategory = async (
 
     console.log(`[4/4] 汇总统计`);
     console.log(`      ✓ 新增: ${summary.inserted} 条`);
-    console.log(`      ✓ 更新: ${summary.updated} 条`);
-    console.log(`      ✓ 错误: ${summary.errors} 条`);
+    if (SKIP_EXISTING) {
+      console.log(`      ⊙ 跳过: ${summary.skipped} 条 (已存在)`);
+    } else {
+      console.log(`      ✓ 更新: ${summary.updated} 条`);
+    }
+    console.log(`      ✗ 错误: ${summary.errors} 条`);
     console.log(`\n【${categoryName}】处理完成 ✓\n`);
   } catch (error) {
     const categoryName = CATEGORY_NAMES[category];
@@ -444,6 +485,7 @@ export const syncCustomDateRange = async (
   console.log("╚════════════════════════════════════════════════════════════╝");
   console.log(`\n📅 日期范围: ${startDate} 至 ${endDate}`);
   console.log(`⚙️  并发数: ${CONCURRENCY}`);
+  console.log(`🔄 模式: ${SKIP_EXISTING ? "跳过已存在记录（速度优先）" : "更新已存在记录（数据最新）"}`);
   console.log(`📊 分类: 策略研报 → 宏观研报 → 行业研报 → 个股研报\n`);
 
   // 初始化错误日志记录器
@@ -466,6 +508,7 @@ export const syncCustomDateRange = async (
   const totalFetched = categories.reduce((sum, item) => sum + item.fetched, 0);
   const totalInserted = categories.reduce((sum, item) => sum + item.inserted, 0);
   const totalUpdated = categories.reduce((sum, item) => sum + item.updated, 0);
+  const totalSkipped = categories.reduce((sum, item) => sum + item.skipped, 0);
   const totalErrors = categories.reduce((sum, item) => sum + item.errors, 0);
   const elapsed = Math.round((Date.now() - startTime) / 1000);
 
@@ -477,16 +520,26 @@ export const syncCustomDateRange = async (
   console.log(`\n📊 汇总统计（耗时 ${elapsed}s）:`);;
   console.log(`   • 总获取条数: ${totalFetched} 条`);
   console.log(`   • 新增条数:   ${totalInserted} 条 ✓`);
-  console.log(`   • 更新条数:   ${totalUpdated} 条 ✓`);
+  if (SKIP_EXISTING) {
+    console.log(`   • 跳过条数:   ${totalSkipped} 条 ⊙ (已存在)`);
+  } else {
+    console.log(`   • 更新条数:   ${totalUpdated} 条 ✓`);
+  }
   console.log(`   • 错误条数:   ${totalErrors} 条`);
 
   // 分类统计
   console.log(`\n📋 分类统计:`);
   categories.forEach((cat) => {
     const name = CATEGORY_NAMES[cat.category];
-    console.log(
-      `   【${name}】获取: ${cat.fetched} | 新增: ${cat.inserted} | 更新: ${cat.updated} | 错误: ${cat.errors}`,
-    );
+    if (SKIP_EXISTING) {
+      console.log(
+        `   【${name}】获取: ${cat.fetched} | 新增: ${cat.inserted} | 跳过: ${cat.skipped} | 错误: ${cat.errors}`,
+      );
+    } else {
+      console.log(
+        `   【${name}】获取: ${cat.fetched} | 新增: ${cat.inserted} | 更新: ${cat.updated} | 错误: ${cat.errors}`,
+      );
+    }
   });
 
   console.log("\n");
@@ -502,6 +555,7 @@ export const syncCustomDateRange = async (
     totalFetched,
     totalInserted,
     totalUpdated,
+    totalSkipped,
     totalErrors,
     categories,
     errorLogFile: errorLogFile || undefined,

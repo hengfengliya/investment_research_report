@@ -225,11 +225,6 @@ const ReportCard = ({ report, highlightKeyword, variant = "list" }: ReportCardPr
             </Button>
           </a>
         )}
-        <a href={report.sourceUrl} target="_blank" rel="noreferrer">
-          <Button variant="ghost" size="sm">
-            查看原文
-          </Button>
-        </a>
       </div>
     </article>
   );
