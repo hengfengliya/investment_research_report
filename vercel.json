@@ -10,10 +10,13 @@
       "includeFiles": "backend/dist/**"
     }
   },
-  "rewrites": [
+  "routes": [
     {
-      "source": "/((?!api).*)",
-      "destination": "/index.html"
+      "handle": "filesystem"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ]
 }
