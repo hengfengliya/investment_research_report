@@ -26,7 +26,8 @@ const handleReport = async (c: Context) => {
   return c.json({ success: true, data: report });
 };
 
+// Vercel 文件系统路由已将此文件映射到 /api/report/[id]
+// 所以这里只需定义相对路径 /:id
 app.get("/:id", handleReport);
-app.get("/report/:id", handleReport);
 
 export default handle(app);
