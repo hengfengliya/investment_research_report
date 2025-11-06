@@ -37,6 +37,11 @@ jobs:
           cd backend
           npx prisma generate --schema ../prisma/schema.prisma
 
+      - name: Test database connection
+        run: |
+          cd backend
+          bunx tsx ./scripts/test-db-connection.ts
+
       - name: Run sync script
         run: |
           cd backend

@@ -37,8 +37,21 @@ function prepareDatabaseUrl() {
   }
 
   const parsed = new URL(rawDatabaseUrl);
+
+  // 移除可能导致连接问题的参数
   if (parsed.searchParams.get("channel_binding") === "require") {
     parsed.searchParams.delete("channel_binding");
+  }
+
+  // 为 Neon 数据库优化连接参数
+  // connect_timeout: 连接超时时间（秒），Neon 冷启动需要更长时间
+  if (!parsed.searchParams.has("connect_timeout")) {
+    parsed.searchParams.set("connect_timeout", "30");
+  }
+
+  // pool_timeout: 从连接池获取连接的超时时间（秒）
+  if (!parsed.searchParams.has("pool_timeout")) {
+    parsed.searchParams.set("pool_timeout", "30");
   }
 
   return parsed.toString();
