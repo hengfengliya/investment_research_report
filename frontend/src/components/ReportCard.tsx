@@ -1,24 +1,37 @@
+import type { KeyboardEvent, MouseEvent } from "react";
 import { Badge, Button } from "@components/ui";
-import type { Report } from "@shared-types/report";
+import type { Report, ReportCategory } from "@shared-types/report";
+
+const GRID_CATEGORY_TEXT: Record<ReportCategory, string> = {
+  strategy: "策略",
+  macro: "宏观",
+  industry: "行业",
+  stock: "公司",
+};
+
+const LIST_CATEGORY_TEXT: Record<ReportCategory, string> = {
+  strategy: "策略",
+  macro: "宏观",
+  industry: "行业",
+  stock: "个股",
+};
+
 interface ReportCardProps {
   report: Report;
-  // 高亮关键词：用于标题与摘要的命中高亮
   highlightKeyword?: string;
-  // 显示变体：list（列表）或 grid（网格）
   variant?: "list" | "grid";
 }
-// 将 ISO 字符串转为可读日期
+
 const formatDate = (value: string) => {
-  const date = new Date(value);
+  const date = new Date(value); // 将 ISO 字符串转换成本地日期，方便阅读
   return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString("zh-CN");
 };
-// 文本命中关键词时高亮显示
+
 const highlight = (text: string, keyword?: string) => {
-  if (!keyword) return text;
-  const safe = keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  if (!keyword) return text; // 如果没有关键词就直接返回
+  const safe = keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); // 处理正则特殊字符
   if (!safe) return text;
-  const parts = text.split(new RegExp(`(${safe})`, "gi"));
-  return parts.map((part, idx) =>
+  return text.split(new RegExp(`(${safe})`, "gi")).map((part, idx) =>
     part.toLowerCase() === keyword.toLowerCase() ? (
       <mark key={idx} className="bg-brand-50 text-brand-600 font-semibold no-underline">
         {part}
@@ -28,47 +41,63 @@ const highlight = (text: string, keyword?: string) => {
     ),
   );
 };
+
 const ReportCard = ({ report, highlightKeyword, variant = "list" }: ReportCardProps) => {
-  const impactLevelText = {
-    high: "高影响",
-    medium: "中影响",
-    low: "低影响",
+  const impactLevelText = { high: "高影响", medium: "中影响", low: "低影响" };
+  const hasPdf = Boolean(report.pdfUrl);
+
+  const openPdf = () => {
+    if (!report.pdfUrl) return; // 所有交互入口最终都会调到这里
+    window.open(report.pdfUrl, "_blank", "noopener,noreferrer");
   };
-  const targetUrl = report.pdfUrl || report.sourceUrl;
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
+    if (!hasPdf) return; // 无 PDF 时不做处理，避免报错
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      openPdf();
+    }
+  };
+
+  const stopAndOpen = (event: MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation(); // 防止冒泡触发整卡点击
+    openPdf();
+  };
+
+  const downloadPdf = (event: MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    if (!report.pdfUrl) return;
+    const anchor = document.createElement("a");
+    anchor.href = report.pdfUrl;
+    anchor.target = "_blank";
+    anchor.rel = "noreferrer";
+    anchor.download = "";
+    anchor.click();
+  };
+
+  const articleProps = {
+    role: hasPdf ? ("button" as const) : undefined,
+    tabIndex: hasPdf ? 0 : undefined,
+    onClick: () => hasPdf && openPdf(),
+    onKeyDown: handleKeyDown,
+  };
+  const stateClass = hasPdf ? "cursor-pointer" : "cursor-not-allowed opacity-70";
+
   if (variant === "grid") {
     return (
-      <article className="flex flex-col h-full rounded-sm border border-border-default bg-bg-secondary shadow-sm transition-all duration-300 hover:shadow-lg hover:-translate-y-1 overflow-hidden group">
+      <article
+        {...articleProps}
+        className={`flex h-full flex-col rounded-sm border border-border-default bg-bg-secondary shadow-sm transition-all duration-300 hover:shadow-lg hover:-translate-y-1 overflow-hidden group ${stateClass}`}
+      >
         <div className="px-4 pt-4 pb-2 flex items-center gap-2 flex-wrap">
-          {report.category && (
-            <Badge variant="default" size="sm">
-              {report.category === "strategy" && "策略"}
-              {report.category === "macro" && "宏观"}
-              {report.category === "industry" && "行业"}
-              {report.category === "stock" && "公司"}
-            </Badge>
-          )}
-          {report.rating && (
-            <Badge variant="filled" size="sm">
-              {report.rating}
-            </Badge>
-          )}
+          {report.category && <Badge variant="default" size="sm">{GRID_CATEGORY_TEXT[report.category]}</Badge>}
+          {report.rating && <Badge variant="filled" size="sm">{report.rating}</Badge>}
         </div>
         <div className="px-4 py-3 flex-1 flex flex-col space-y-3">
           <h3 className="text-sm font-semibold text-text-primary line-clamp-2 leading-snug">
-            <a
-              href={targetUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="hover:text-brand-500 transition-colors"
-            >
-              {highlight(report.title, highlightKeyword)}
-            </a>
+            {highlight(report.title, highlightKeyword)}
           </h3>
-          {report.summary && (
-            <p className="text-xs text-text-secondary line-clamp-2 flex-1 leading-relaxed">
-              {highlight(report.summary, highlightKeyword)}
-            </p>
-          )}
+          {report.summary && <p className="text-xs text-text-secondary line-clamp-2 flex-1 leading-relaxed">{highlight(report.summary, highlightKeyword)}</p>}
           <div className="text-xs text-text-tertiary flex items-center gap-1 flex-wrap">
             <span>{formatDate(report.date)}</span>
             <span>·</span>
@@ -78,54 +107,27 @@ const ReportCard = ({ report, highlightKeyword, variant = "list" }: ReportCardPr
       </article>
     );
   }
+
   return (
-    <article className="rounded-md border border-border-default bg-bg-secondary shadow-sm transition-all duration-fast hover:shadow-md hover:-translate-y-0.5">
+    <article
+      {...articleProps}
+      className={`rounded-md border border-border-default bg-bg-secondary shadow-sm transition-all duration-fast hover:shadow-md hover:-translate-y-0.5 ${stateClass}`}
+    >
       <div className="p-5 space-y-3">
         {(report.category || report.industry) && (
           <div className="flex flex-wrap gap-2">
-            {report.category && (
-              <Badge variant="default" size="sm">
-                {report.category === "strategy" && "策略"}
-                {report.category === "macro" && "宏观"}
-                {report.category === "industry" && "行业"}
-                {report.category === "stock" && "个股"}
-              </Badge>
-            )}
-            {report.industry && (
-              <Badge variant="default" size="sm">
-                {report.industry}
-              </Badge>
-            )}
+            {report.category && <Badge variant="default" size="sm">{LIST_CATEGORY_TEXT[report.category]}</Badge>}
+            {report.industry && <Badge variant="default" size="sm">{report.industry}</Badge>}
           </div>
         )}
         <h2 className="text-base font-semibold text-text-primary line-clamp-2">
-          <a
-            href={targetUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="hover:text-brand-600 transition-colors"
-          >
-            {highlight(report.title, highlightKeyword)}
-          </a>
+          {highlight(report.title, highlightKeyword)}
         </h2>
         {(report.rating || report.stockName || report.impactLevel) && (
           <div className="flex flex-wrap gap-2">
-            {report.rating && (
-              <Badge variant="filled" size="sm">
-                评级：{report.rating}
-              </Badge>
-            )}
-            {report.stockName && (
-              <Badge variant="filled" size="sm">
-                {report.stockName}
-                {report.stockCode && `（${report.stockCode}）`}
-              </Badge>
-            )}
-            {typeof report.targetPrice === "number" && (
-              <Badge variant="default" size="sm">
-                目标价：¥{report.targetPrice.toFixed(2)}
-              </Badge>
-            )}
+            {report.rating && <Badge variant="filled" size="sm">评级：{report.rating}</Badge>}
+            {report.stockName && <Badge variant="filled" size="sm">{report.stockName}{report.stockCode && `（${report.stockCode}）`}</Badge>}
+            {typeof report.targetPrice === "number" && <Badge variant="default" size="sm">目标价：¥{report.targetPrice.toFixed(2)}</Badge>}
             {report.impactLevel && (
               <Badge
                 variant={
@@ -156,9 +158,7 @@ const ReportCard = ({ report, highlightKeyword, variant = "list" }: ReportCardPr
           </div>
         </div>
         <p className="text-sm leading-relaxed text-text-secondary line-clamp-2">
-          {report.summary
-            ? highlight(report.summary, highlightKeyword)
-            : "暂未提取摘要，可点击查看原文内容。"}
+          {report.summary ? highlight(report.summary, highlightKeyword) : "暂未提取摘要，可点击打开 PDF 查看原文。"}
         </p>
         {report.topicTags.length > 0 && (
           <div className="flex flex-wrap gap-2 pt-2">
@@ -174,20 +174,15 @@ const ReportCard = ({ report, highlightKeyword, variant = "list" }: ReportCardPr
         )}
       </div>
       <div className="border-t border-border-default px-5 py-3 flex flex-wrap gap-2">
-        <a href={targetUrl} target="_blank" rel="noreferrer">
-          <Button variant="primary" size="sm">
-            查看 PDF
-          </Button>
-        </a>
-        {report.pdfUrl && (
-          <a href={report.pdfUrl} target="_blank" rel="noreferrer">
-            <Button variant="secondary" size="sm">
-              下载 PDF
-            </Button>
-          </a>
-        )}
+        <Button variant="primary" size="sm" onClick={stopAndOpen} disabled={!hasPdf}>
+          查看 PDF
+        </Button>
+        <Button variant="secondary" size="sm" onClick={downloadPdf} disabled={!hasPdf}>
+          下载 PDF
+        </Button>
       </div>
     </article>
   );
 };
+
 export default ReportCard;
