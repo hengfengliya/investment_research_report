@@ -24,6 +24,18 @@ const buildEncodeUrl = (path: string, encodeUrl: string | undefined) => {
   return `https://data.eastmoney.com/report/${path}?encodeUrl=${encodeURIComponent(encodeUrl)}`;
 };
 
+const normalizeInfoCode = (value?: string | null) => {
+  if (!value) return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+};
+
+const buildPdfUrlFromInfoCode = (infoCode?: string | null) => {
+  const normalized = normalizeInfoCode(infoCode);
+  if (!normalized) return null;
+  return `https://pdf.dfcfw.com/pdf/H3_${normalized}_1.pdf`;
+};
+
 /**
  * 根据分类与列表记录推断详情页地址。
  */
@@ -34,7 +46,7 @@ export const resolveDetailUrl = (
   const mode = CATEGORY_CONFIGS[category].detailMode;
 
   if (mode === "infoCode") {
-    const infoCode = record.infoCode as string | undefined;
+    const infoCode = normalizeInfoCode(record.infoCode as string | undefined);
     if (!infoCode) return null;
     return `https://data.eastmoney.com/report/info/${infoCode}.html`;
   }
@@ -141,12 +153,14 @@ export const fetchDetailInfo = async (
   category: ReportCategory,
   record: Record<string, unknown>,
 ): Promise<DetailResult> => {
+  const infoCode = normalizeInfoCode(record.infoCode as string | undefined);
+  const fallbackPdfUrl = buildPdfUrlFromInfoCode(infoCode);
   const url = resolveDetailUrl(category, record);
 
   if (!url) {
     return {
       summary: "",
-      pdfUrl: null,
+      pdfUrl: fallbackPdfUrl,
       topicTags: [],
       impactLevel: null,
       stockCode: record.stockCode as string | null,
@@ -208,7 +222,8 @@ export const fetchDetailInfo = async (
   }
 
   const pdfUrlRaw = (zwinfo?.attach_url as string | undefined) ?? null;
-  const pdfUrl = pdfUrlRaw ? pdfUrlRaw.split("?")[0] : null;
+  const pdfUrlFromDetail = pdfUrlRaw ? pdfUrlRaw.split("?")[0] : null;
+  const pdfUrl = pdfUrlFromDetail ?? fallbackPdfUrl ?? null;
 
   const rawImpact = (zwinfo?.star ?? zwinfo?.rating ?? null) as
     | string
