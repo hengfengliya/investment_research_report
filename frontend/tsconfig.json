@@ -14,8 +14,6 @@
     "baseUrl": "src",
     "paths": {
       "@components/*": ["components/*"],
-      "@layouts/*": ["layouts/*"],
-      "@data/*": ["data/*"],
       "@pages/*": ["pages/*"],
       "@lib/*": ["lib/*"],
       "@shared-types/*": ["types/*"]
