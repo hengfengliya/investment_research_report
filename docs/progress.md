@@ -164,3 +164,4 @@ const ensureDate = (value: unknown) => {
 - âœ… å·²ç¡®è®¤æ¯å¤© UTC 22:00 (åŒ—äº¬æ—¶é—´ 06:00) è‡ªåŠ¨è¿è¡Œ
 - âœ… çŽ¯å¢ƒå˜é‡ï¼š`SYNC_LOOKBACK_DAYS=2`ã€`SYNC_CONCURRENCY=8`
 - âœ… åŽç»­æ¯æ—¥è‡ªåŠ¨æŠ“å–æœ€è¿‘ 2 å¤©æ•°æ®ï¼Œä½¿ç”¨æ­£ç¡®çš„æ—¥æœŸå¤„ç†é€»è¾‘
+\n## PDF Á´½Ó¶µµ×ÐÞ¸´£¨2025-11-17£©\n### ÎÊÌâ±³¾°\n- ²ßÂÔ/ºê¹ÛÏêÇéÒ³ÈÔ¿ÉÒÔ½âÎöµ½ `zwinfo.attach_url`£¬µ«ÐÐÒµ/¹«Ë¾ÏêÇéÒ³½üÆÚÒÆ³ýÁË¸Ã×Ö¶Î£¬`pdfUrl` ´óÁ¿Îª `null`£¨Í³¼Æ½öÔ¼ 2% ÐÐÒµ±¨¸æÓÐ PDF£©£¬Ç°¶Ë¿¨Æ¬µã»÷Ìø×ªÌåÑéÊÜÓ°Ïì¡£\n\n### ½â¾ö·½°¸\n- ÔÚ backend/scripts/detail-parser.ts ÖÐÐÂÔö `normalizeInfoCode`¡¢`buildPdfUrlFromInfoCode`£¬Í¨¹ý `infoCode` Ö±½ÓÆ´½Ó `https://pdf.dfcfw.com/pdf/H3_${infoCode}_1.pdf` ×÷Îª¶µµ×¡£\n- `fetchDetailInfo` ÔÚ½âÎöÏêÇéÒ³Ç°¾ÍÉú³É `fallbackPdfUrl`£¬¼´Ê¹ÇëÇóÊ§°Ü»ò `zwinfo` È±Ê§Ò²ÄÜ·µ»ØÓÐÐ§ PDF£»`resolveDetailUrl` Í¬²½Ê¹ÓÃ `normalizeInfoCode`£¬±ÜÃâ infoCode Ç°ºó¿Õ°×µ¼ÖÂÆ´½ÓÊ§°Ü¡£\n\n### ÑéÖ¤·½Ê½\n- ÔËÐÐ `npx tsx detail-inspect.ts industry 3`£¨Óë CLI ÈÕÖ¾ÏàÍ¬£©£¬¿ÉÒÔ¿´µ½×îÐÂÐÐÒµ±¨¸æµÄ `pdfUrl` ÒÑ±äÎª `https://pdf.dfcfw.com/pdf/H3_..._1.pdf`¡£\n- ½¨Òé°Ñ `.env` ÖÐ `SYNC_SKIP_EXISTING=false`£¬Ö´ÐÐÒ»´Î `bun run backend/scripts/sync-runner.ts` »ò `sync:date` »ØÌîÀúÊ·Êý¾Ý£¬ÔÙ»Ö¸´Ä¬ÈÏÅäÖÃÒÔ±£³ÖÔöÁ¿Í¬²½¡£
