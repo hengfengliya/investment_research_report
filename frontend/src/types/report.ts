@@ -1,8 +1,7 @@
-export type ReportCategory = "strategy" | "macro" | "industry" | "stock";
+﻿export type ReportCategory = "strategy" | "macro" | "industry" | "stock";
 
 /**
- * Report 定义了前端展示所需的研报字段。
- */
+ * Report 瀹氫箟浜嗗墠绔睍绀烘墍闇€鐨勭爺鎶ュ瓧娈点€? */
 export interface Report {
   id: number;
   title: string;
@@ -50,3 +49,4 @@ export interface ReportFilter {
   endDate?: string;
   sort?: "date" | "hot";
 }
+
