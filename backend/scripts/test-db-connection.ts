@@ -9,7 +9,7 @@
  *   GitHub Actions: bunx tsx scripts/test-db-connection.ts
  */
 
-import { createPrismaClient, withRetry } from "../lib/prisma";
+import { createPrismaClient, withRetry } from "../lib/prisma.js";
 
 async function testConnection() {
   console.log("=".repeat(60));
