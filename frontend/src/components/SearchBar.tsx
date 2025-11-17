@@ -1,4 +1,3 @@
-import { Input } from "@components/ui";
 import type { ReportCategory } from "@shared-types/report";
 
 interface SearchBarProps {
@@ -82,7 +81,7 @@ const SearchBar = ({
         value={searchKeyword}
         onChange={(e) => onSearchChange(e.target.value)}
         placeholder="搜索研报..."
-        className="flex-1 bg-transparent text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none px-2"
+        className="flex-1 bg-transparent border-0 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 px-2"
       />
 
       {/* 清空按钮 */}
