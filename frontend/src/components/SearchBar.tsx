@@ -81,7 +81,7 @@ const SearchBar = ({
         value={searchKeyword}
         onChange={(e) => onSearchChange(e.target.value)}
         placeholder="搜索研报..."
-        className="flex-1 bg-transparent border-0 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 px-2"
+        className="flex-1 bg-transparent border-0 text-base text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 px-3"
       />
 
       {/* 清空按钮 */}
@@ -110,12 +110,12 @@ const SearchBar = ({
       <div className="w-px h-6 bg-border-default mx-2"></div>
 
       {/* 类型选择：平铺按钮 */}
-      <div className="flex items-center gap-1 pr-2 flex-shrink-0">
+      <div className="flex items-center gap-1.5 pr-3 flex-shrink-0">
         {CATEGORY_OPTIONS.map((option) => (
           <button
             key={option.value}
             onClick={() => onCategoryChange(option.value)}
-            className={`px-2 py-1 text-xs font-medium rounded transition-all whitespace-nowrap ${
+            className={`px-3 py-1 text-sm font-medium rounded transition-all whitespace-nowrap ${
               searchCategory === option.value
                 ? "bg-brand-500 text-white"
                 : "text-text-secondary hover:text-text-primary"

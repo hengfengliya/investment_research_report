@@ -165,7 +165,7 @@ const ReportListPage = ({
 
         {/* 分页组件 */}
         {listData && listData.totalPages > 1 && !loading && (
-          <div className="mt-12">
+          <div className="mt-12 flex justify-center">
             <Pagination
               page={listData.page}
               totalPages={listData.totalPages}
