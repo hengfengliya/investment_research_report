@@ -99,7 +99,7 @@ const Pagination = ({
                 <button
                   key={pageNum}
                   onClick={() => onChange(pageNum)}
-                  className={`h-8 w-8 rounded-sm text-sm font-medium transition-all ${
+                  className={`h-8 px-3 min-w-[2.5rem] rounded-sm text-sm font-medium transition-all flex items-center justify-center ${
                     isActive
                       ? "bg-brand-500 text-white"
                       : "border border-border-default bg-bg-secondary text-text-primary hover:bg-slate-50"
@@ -172,4 +172,3 @@ const Pagination = ({
 };
 
 export default Pagination;
-
