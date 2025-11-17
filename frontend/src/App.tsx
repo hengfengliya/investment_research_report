@@ -2,7 +2,6 @@ import { useState } from "react";
 import { NavLink, Route, Routes } from "react-router-dom";
 import SearchBar from "@components/SearchBar";
 import ReportListPage from "@pages/ReportList";
-import ReportDetailPage from "@pages/ReportDetail";
 import SidebarFilter from "@components/SidebarFilter";
 import type { ReportFilter, ReportCategory } from "@shared-types/report";
 
@@ -113,7 +112,6 @@ const App = () => {
                 />
               }
             />
-            <Route path="/reports/:id" element={<ReportDetailPage />} />
           </Routes>
         </main>
       </div>

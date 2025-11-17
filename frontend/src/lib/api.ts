@@ -1,6 +1,5 @@
 import type {
   CategoryStat,
-  Report,
   ReportCategory,
   ReportFilter,
   ReportListResponse,
@@ -48,10 +47,6 @@ export const getReports = async (
   return get<ReportListResponse>("/reports", params);
 };
 
-export const getReportDetail = async (id: string): Promise<Report> => {
-  return get<Report>(`/report/${id}`);
-};
-
 export const getCategoryStats = async (): Promise<CategoryStat[]> => {
   return get<CategoryStat[]>("/categories");
 };
@@ -81,4 +76,3 @@ export const triggerSync = async (key: string) => {
 
   return payload.data;
 };
-

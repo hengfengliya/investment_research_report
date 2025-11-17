@@ -1,7 +1,5 @@
-import { Link } from "react-router-dom";
 import { Badge, Button } from "@components/ui";
 import type { Report } from "@shared-types/report";
-
 interface ReportCardProps {
   report: Report;
   // 高亮关键词：用于标题与摘要的命中高亮
@@ -9,16 +7,12 @@ interface ReportCardProps {
   // 显示变体：list（列表）或 grid（网格）
   variant?: "list" | "grid";
 }
-
-// 将 ISO 字符串转为日期（YYYY-MM-DD）
+// 将 ISO 字符串转为可读日期
 const formatDate = (value: string) => {
   const date = new Date(value);
-  return Number.isNaN(date.getTime())
-    ? value
-    : date.toLocaleDateString("zh-CN");
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString("zh-CN");
 };
-
-// 将文本中匹配到的关键字高亮显示（大小写不敏感）
+// 文本命中关键词时高亮显示
 const highlight = (text: string, keyword?: string) => {
   if (!keyword) return text;
   const safe = keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -34,29 +28,16 @@ const highlight = (text: string, keyword?: string) => {
     ),
   );
 };
-
-/**
- * ReportCard：研报卡片组件（金融极简白设计）
- * 信息层级与排版：
- * 1) 顶部分类标签（行业/类型）
- * 2) 标题（2行，关键词高亮）
- * 3) 标签组（热门/评级/行业/个股等）
- * 4) 元信息（发布日期 · 机构 · 作者）
- * 5) 摘要片段（2行裁切，关键词高亮）
- * 6) 操作按钮（下载/查看详情/原文）
- */
 const ReportCard = ({ report, highlightKeyword, variant = "list" }: ReportCardProps) => {
   const impactLevelText = {
-    high: "高",
-    medium: "中",
-    low: "低",
+    high: "高影响",
+    medium: "中影响",
+    low: "低影响",
   };
-
-  // 网格变体：精简信息展示 + 极简黑白主题
+  const targetUrl = report.pdfUrl || report.sourceUrl;
   if (variant === "grid") {
     return (
       <article className="flex flex-col h-full rounded-sm border border-border-default bg-bg-secondary shadow-sm transition-all duration-300 hover:shadow-lg hover:-translate-y-1 overflow-hidden group">
-        {/* 头部：分类 + 评级标签 */}
         <div className="px-4 pt-4 pb-2 flex items-center gap-2 flex-wrap">
           {report.category && (
             <Badge variant="default" size="sm">
@@ -72,27 +53,22 @@ const ReportCard = ({ report, highlightKeyword, variant = "list" }: ReportCardPr
             </Badge>
           )}
         </div>
-
-        {/* 内容区 */}
         <div className="px-4 py-3 flex-1 flex flex-col space-y-3">
-          {/* 标题：2 行裁切，权重突出 */}
           <h3 className="text-sm font-semibold text-text-primary line-clamp-2 leading-snug">
-            <Link
-              to={`/reports/${report.id}`}
+            <a
+              href={targetUrl}
+              target="_blank"
+              rel="noreferrer"
               className="hover:text-brand-500 transition-colors"
             >
               {highlight(report.title, highlightKeyword)}
-            </Link>
+            </a>
           </h3>
-
-          {/* 摘要：核心内容，2 行展示 */}
           {report.summary && (
             <p className="text-xs text-text-secondary line-clamp-2 flex-1 leading-relaxed">
               {highlight(report.summary, highlightKeyword)}
             </p>
           )}
-
-          {/* 元信息：日期 · 机构（紧凑） */}
           <div className="text-xs text-text-tertiary flex items-center gap-1 flex-wrap">
             <span>{formatDate(report.date)}</span>
             <span>·</span>
@@ -102,12 +78,9 @@ const ReportCard = ({ report, highlightKeyword, variant = "list" }: ReportCardPr
       </article>
     );
   }
-
-  // 列表变体：原来的设计
   return (
     <article className="rounded-md border border-border-default bg-bg-secondary shadow-sm transition-all duration-fast hover:shadow-md hover:-translate-y-0.5">
       <div className="p-5 space-y-3">
-        {/* 1) 顶部分类信息 */}
         {(report.category || report.industry) && (
           <div className="flex flex-wrap gap-2">
             {report.category && (
@@ -125,18 +98,16 @@ const ReportCard = ({ report, highlightKeyword, variant = "list" }: ReportCardPr
             )}
           </div>
         )}
-
-        {/* 2) 标题（2行，关键词高亮） */}
         <h2 className="text-base font-semibold text-text-primary line-clamp-2">
-          <Link
-            to={`/reports/${report.id}`}
+          <a
+            href={targetUrl}
+            target="_blank"
+            rel="noreferrer"
             className="hover:text-brand-600 transition-colors"
           >
             {highlight(report.title, highlightKeyword)}
-          </Link>
+          </a>
         </h2>
-
-        {/* 3) 标签组（如果有额外标签） */}
         {(report.rating || report.stockName || report.impactLevel) && (
           <div className="flex flex-wrap gap-2">
             {report.rating && (
@@ -161,8 +132,8 @@ const ReportCard = ({ report, highlightKeyword, variant = "list" }: ReportCardPr
                   report.impactLevel === "high"
                     ? "error"
                     : report.impactLevel === "medium"
-                      ? "warning"
-                      : "success"
+                    ? "warning"
+                    : "success"
                 }
                 size="sm"
               >
@@ -171,8 +142,6 @@ const ReportCard = ({ report, highlightKeyword, variant = "list" }: ReportCardPr
             )}
           </div>
         )}
-
-        {/* 4) 元信息：发布日期 · 机构 · 作者 */}
         <div className="text-xs text-text-tertiary space-y-1">
           <div className="flex flex-wrap gap-1 text-text-secondary">
             <span>{formatDate(report.date)}</span>
@@ -186,15 +155,11 @@ const ReportCard = ({ report, highlightKeyword, variant = "list" }: ReportCardPr
             )}
           </div>
         </div>
-
-        {/* 5) 摘要片段（2行裁切，关键词高亮） */}
         <p className="text-sm leading-relaxed text-text-secondary line-clamp-2">
           {report.summary
             ? highlight(report.summary, highlightKeyword)
-            : "暂未提取摘要，可点击查看详情。"}
+            : "暂未提取摘要，可点击查看原文内容。"}
         </p>
-
-        {/* 主题标签 */}
         {report.topicTags.length > 0 && (
           <div className="flex flex-wrap gap-2 pt-2">
             {report.topicTags.slice(0, 3).map((tag) => (
@@ -203,21 +168,17 @@ const ReportCard = ({ report, highlightKeyword, variant = "list" }: ReportCardPr
               </Badge>
             ))}
             {report.topicTags.length > 3 && (
-              <span className="text-xs text-text-tertiary">
-                +{report.topicTags.length - 3}
-              </span>
+              <span className="text-xs text-text-tertiary">+{report.topicTags.length - 3}</span>
             )}
           </div>
         )}
       </div>
-
-      {/* 底部操作区 */}
       <div className="border-t border-border-default px-5 py-3 flex flex-wrap gap-2">
-        <Link to={`/reports/${report.id}`}>
+        <a href={targetUrl} target="_blank" rel="noreferrer">
           <Button variant="primary" size="sm">
-            查看详情
+            查看 PDF
           </Button>
-        </Link>
+        </a>
         {report.pdfUrl && (
           <a href={report.pdfUrl} target="_blank" rel="noreferrer">
             <Button variant="secondary" size="sm">
@@ -229,5 +190,4 @@ const ReportCard = ({ report, highlightKeyword, variant = "list" }: ReportCardPr
     </article>
   );
 };
-
 export default ReportCard;
