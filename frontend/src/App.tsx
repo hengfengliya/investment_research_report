@@ -48,7 +48,7 @@ const App = () => {
               to="/"
               className="text-base font-semibold text-text-primary hover:text-brand-500 transition-colors"
             >
-              有物投研
+              辰星投研
             </NavLink>
 
             {/* 导航链接 */}
@@ -118,7 +118,7 @@ const App = () => {
 
       {/* 页脚 */}
       <footer className="bg-text-primary text-white py-6 text-center text-xs">
-        仅供学习参考 · © {new Date().getFullYear()} 有物投研
+        仅供学习参考 · © {new Date().getFullYear()} 辰星投研
       </footer>
     </div>
   );
