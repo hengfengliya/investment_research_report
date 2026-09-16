@@ -10,10 +10,11 @@
       "includeFiles": "backend/dist/**"
     }
   },
-  "rewrites": [
+  "redirects": [
     {
-      "source": "/((?!api).*)",
-      "destination": "/index.html"
+      "source": "/(.*)",
+      "destination": "https://www.chenxing.xin/research?type=free",
+      "permanent": true
     }
   ]
 }
